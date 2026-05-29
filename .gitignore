@@ -1,0 +1,7 @@
+.DS_Store
+build/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/
+DerivedData/
+/ClaudeRing/Info.plist
