@@ -73,28 +73,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if popover.isShown {
             popover.performClose(nil)
         } else {
-            showPopover(withPrefs: false)
+            showPopover()
         }
     }
 
-    @objc func openPrefs() {
-        showPopover(withPrefs: true)
-    }
-
-    private func showPopover(withPrefs: Bool) {
+    private func showPopover() {
         guard let button = statusItem.button else { return }
-
-        // Synchronous close — performClose is animated and leaves isShown=true
-        // for a frame, which would block any subsequent show() call.
         if popover.isShown { popover.close() }
 
         let controller = NSHostingController(
-            rootView: PopoverView(initiallyShowPrefs: withPrefs)
+            rootView: PopoverView(openPrefs: { [weak self] in self?.openPrefs() })
                 .environment(service)
         )
         controller.view.appearance = NSApp.effectiveAppearance
         popover.contentViewController = controller
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+    }
+
+    // MARK: - Preferences window
+    // Uses NSHostingView (not NSHostingController) as the contentView. The Controller
+    // variant fights with the window over auto-sizing, causing infinite layout
+    // recursion crashes. The View variant just renders SwiftUI inside the fixed
+    // rect we give it. No bidirectional sizing, no loop.
+
+    private var prefsWindow: NSWindow?
+
+    @objc func openPrefs() {
+        popover.performClose(nil)
+
+        if prefsWindow == nil {
+            let size = NSSize(width: 440, height: 480)
+
+            let hostingView = NSHostingView(
+                rootView: PreferencesWindowView().environment(service)
+            )
+            hostingView.frame = NSRect(origin: .zero, size: size)
+
+            let window = NSWindow(
+                contentRect: NSRect(origin: .zero, size: size),
+                styleMask: [.titled, .closable],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = "ClaudeRing Preferences"
+            window.contentView = hostingView
+            window.isReleasedWhenClosed = false
+            window.center()
+            prefsWindow = window
+        }
+
+        // For LSUIElement apps, the window may not come to front without explicit
+        // activation. orderFrontRegardless bypasses focus-rules quirks.
+        NSApp.activate(ignoringOtherApps: true)
+        prefsWindow?.makeKeyAndOrderFront(nil)
+        prefsWindow?.orderFrontRegardless()
     }
 
     // MARK: - Icon updater

@@ -122,40 +122,19 @@ private struct PreferencesContent: View {
     }
 }
 
-// MARK: - Inline (gear in popover)
+// MARK: - Standalone window content (mounted in NSHostingView from AppDelegate)
 
-struct PreferencesView: View {
+struct PreferencesWindowView: View {
     @Environment(UsageService.self) var service
-    let onDone: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button(action: onDone) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left").font(.system(size: 11, weight: .semibold))
-                        Text("Back").font(.system(size: 12))
-                    }
-                }
-                .buttonStyle(.plain).foregroundStyle(.secondary)
-                Spacer()
-                Text("Preferences").font(.system(size: 13, weight: .semibold))
-                Spacer()
-                Text("Back").font(.system(size: 12)).opacity(0) // balance
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-
-            Divider()
-
-            ScrollView {
-                PreferencesContent()
-                    .environment(service)
-                    .padding(16)
-            }
+        ScrollView {
+            PreferencesContent()
+                .environment(service)
+                .padding(24)
         }
+        // Fixed frame matches the NSWindow contentRect set in AppDelegate (440×480).
+        // NSHostingView renders SwiftUI within this rect; no resize negotiation.
+        .frame(width: 440, height: 480)
     }
 }
-
-// MARK: - Standalone window (right-click Preferences)
-

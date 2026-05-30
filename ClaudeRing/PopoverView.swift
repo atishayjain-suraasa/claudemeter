@@ -2,31 +2,15 @@ import SwiftUI
 
 struct PopoverView: View {
     @Environment(UsageService.self) var service
-    let initiallyShowPrefs: Bool
+    let openPrefs: () -> Void
 
-    @State private var showPrefs: Bool
     @State private var displayedSession: Double = 0
     @State private var displayedWeekly: Double = 0
     @State private var now = Date()
 
-    init(initiallyShowPrefs: Bool = false) {
-        self.initiallyShowPrefs = initiallyShowPrefs
-        self._showPrefs = State(initialValue: initiallyShowPrefs)
-    }
-
     var body: some View {
-        Group {
-            if showPrefs {
-                PreferencesView(onDone: { showPrefs = false })
-                    .environment(service)
-            } else {
-                mainView
-            }
-        }
+        mainView
         .frame(width: 260)
-        // No explicit background — NSPopover already renders a dark visual-effect
-        // background in dark mode. Adding .regularMaterial on top washes it out.
-        .onDisappear { showPrefs = false }
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now = $0 }
         .task {
             // Seed displayed values before first refresh so there's no flash from 0
@@ -76,7 +60,7 @@ struct PopoverView: View {
             HStack(spacing: 8) {
                 statusText.font(.system(size: 11)).lineLimit(1)
                 Spacer()
-                Button { showPrefs = true } label: {
+                Button { openPrefs() } label: {
                     Image(systemName: "gear").font(.system(size: 12))
                 }
                 .buttonStyle(.plain).foregroundStyle(.secondary)
