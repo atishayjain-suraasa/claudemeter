@@ -10,7 +10,8 @@ final class UsageService {
 
     private var pollTimer: Timer?
     private var fileWatchTimer: Timer?
-    private var cachedToken: String?               // avoids re-prompting keychain on every refresh
+    private var authRecoveryTimer: Timer?              // fires every 60s while auth is failed
+    private var cachedToken: String?                   // avoids re-prompting keychain on every refresh
     private var lastTriggerMtime: Date = .distantPast  // seeded from actual file at init to avoid spurious trigger
 
     private let claudeBundleID = "com.anthropic.claudefordesktop"
@@ -51,24 +52,43 @@ final class UsageService {
                 updatedAt: Date()
             )
             refreshState = .idle
+            stopAuthRecoveryTimer()
         } catch KeychainError.itemNotFound, KeychainError.missingToken {
             cachedToken = nil
-            snapshot = .empty
             refreshState = .failed(.authFailed)
+            startAuthRecoveryTimer()
         } catch KeychainError.accessDenied {
             cachedToken = nil
-            snapshot = .empty
             refreshState = .failed(.authFailed)
+            startAuthRecoveryTimer()
         } catch AnthropicClient.ClientError.unauthorized {
-            // Token expired — clear cache so next refresh re-reads from keychain
+            // Token expired — clear cache so next refresh re-reads keychain
             cachedToken = nil
-            snapshot = .empty
             refreshState = .failed(.authFailed)
+            startAuthRecoveryTimer()
         } catch AnthropicClient.ClientError.networkError {
             refreshState = .failed(.offline)
         } catch {
             refreshState = .failed(.headersUnreadable)
         }
+    }
+
+    // MARK: - Auth recovery timer
+    // While auth is failed, poll the keychain every 60s. Claude Code refreshes
+    // its OAuth token in the keychain whenever it makes an API call, so as soon
+    // as the user runs any `claude` command, our next tick will pick up the new
+    // token and recover automatically — no need to click the ring.
+
+    private func startAuthRecoveryTimer() {
+        guard authRecoveryTimer == nil else { return }
+        authRecoveryTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in await self?.refresh() }
+        }
+    }
+
+    private func stopAuthRecoveryTimer() {
+        authRecoveryTimer?.invalidate()
+        authRecoveryTimer = nil
     }
 
     // Returns cached token or reads from keychain (prompts user once per app session)
