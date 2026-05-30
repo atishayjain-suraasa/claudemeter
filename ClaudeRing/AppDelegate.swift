@@ -87,12 +87,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Preferences window
-    // Uses the SwiftUI Settings scene — proper macOS settings window with correct
-    // appearance, close button, and Cmd+, shortcut. No manual NSWindow management.
+
+    private var prefsWindow: NSWindow?
 
     @objc func openPrefsWindow() {
         popover.performClose(nil)
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+
+        if prefsWindow == nil {
+            let vc = NSHostingController(
+                rootView: PreferencesWindowView().environment(service)
+            )
+            vc.view.appearance = NSApp.effectiveAppearance
+            // sizingOptions = [] is the key: stops the hosting controller from calling
+            // setContentSize on the window after every SwiftUI layout pass, which would
+            // trigger another layout, causing infinite recursion and a crash.
+            vc.sizingOptions = []
+
+            let win = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 480),
+                styleMask: [.titled, .closable],
+                backing: .buffered,
+                defer: false
+            )
+            win.title = "ClaudeRing Preferences"
+            win.contentViewController = vc
+            win.isReleasedWhenClosed = false
+            win.center()
+            prefsWindow = win
+        } else {
+            prefsWindow?.contentViewController?.view.appearance = NSApp.effectiveAppearance
+        }
+
+        prefsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 

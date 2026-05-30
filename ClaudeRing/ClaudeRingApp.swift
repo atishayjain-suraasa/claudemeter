@@ -5,12 +5,8 @@ struct ClaudeRingApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        // Settings scene = proper macOS settings window.
-        // Correct dark/light appearance, standard close button, Cmd+, shortcut.
-        // NSApp.sendAction(Selector(("showSettingsWindow:")), ...) opens it programmatically.
-        Settings {
-            PreferencesWindowView()
-                .environment(appDelegate.service)
-        }
+        // Settings { EmptyView() } suppresses the automatic main window
+        // while still keeping LSUIElement=true for no dock icon.
+        Settings { EmptyView() }
     }
 }

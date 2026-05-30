@@ -163,11 +163,14 @@ struct PreferencesWindowView: View {
     @Environment(UsageService.self) var service
 
     var body: some View {
-        // Settings scene manages the window — no fixed frame needed.
-        // Width 380 gives comfortable padding; height is determined by content.
-        PreferencesContent()
-            .environment(service)
-            .padding(20)
-            .frame(width: 380)
+        // Frame matches the NSWindow contentRect exactly (420×480).
+        // sizingOptions=[] on the hosting controller stops it from resizing the window,
+        // so SwiftUI must render within these fixed bounds — no layout loop possible.
+        ScrollView {
+            PreferencesContent()
+                .environment(service)
+                .padding(24)
+        }
+        .frame(width: 420, height: 480)
     }
 }
