@@ -10,8 +10,6 @@ final class UsageService {
 
     private var pollTimer: Timer?
     private var fileWatchTimer: Timer?
-    private var authRecoveryTimer: Timer?              // fires every 60s while auth is failed
-    private var cachedToken: String?                   // avoids re-prompting keychain on every refresh
     private var lastTriggerMtime: Date = .distantPast  // seeded from actual file at init to avoid spurious trigger
 
     private let claudeBundleID = "com.anthropic.claudefordesktop"
@@ -42,7 +40,10 @@ final class UsageService {
         refreshState = .refreshing
 
         do {
-            let token = try resolveToken()
+            // Read keychain fresh on every refresh — no in-memory cache. macOS keychain
+            // ACL ("Always Allow") makes repeated reads silent, and reading fresh means
+            // Claude Code's token refreshes propagate instantly without any special handling.
+            let token = try KeychainReader.claudeAccessToken()
             let data = try await AnthropicClient.fetchUsage(token: token)
             snapshot = UsageSnapshot(
                 sessionUtilization: data.sessionUtilization,
@@ -52,51 +53,17 @@ final class UsageService {
                 updatedAt: Date()
             )
             refreshState = .idle
-            stopAuthRecoveryTimer()
         } catch KeychainError.itemNotFound, KeychainError.missingToken {
-            cachedToken = nil
             refreshState = .failed(.authFailed)
-            startAuthRecoveryTimer()
         } catch KeychainError.accessDenied {
-            cachedToken = nil
             refreshState = .failed(.authFailed)
-            startAuthRecoveryTimer()
         } catch AnthropicClient.ClientError.unauthorized {
-            // Token expired — clear cache so next refresh re-reads keychain
-            cachedToken = nil
             refreshState = .failed(.authFailed)
-            startAuthRecoveryTimer()
         } catch AnthropicClient.ClientError.networkError {
             refreshState = .failed(.offline)
         } catch {
             refreshState = .failed(.headersUnreadable)
         }
-    }
-
-    // MARK: - Auth recovery timer
-    // While auth is failed, poll the keychain every 60s. Claude Code refreshes
-    // its OAuth token in the keychain whenever it makes an API call, so as soon
-    // as the user runs any `claude` command, our next tick will pick up the new
-    // token and recover automatically — no need to click the ring.
-
-    private func startAuthRecoveryTimer() {
-        guard authRecoveryTimer == nil else { return }
-        authRecoveryTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in await self?.refresh() }
-        }
-    }
-
-    private func stopAuthRecoveryTimer() {
-        authRecoveryTimer?.invalidate()
-        authRecoveryTimer = nil
-    }
-
-    // Returns cached token or reads from keychain (prompts user once per app session)
-    private func resolveToken() throws -> String {
-        if let cached = cachedToken { return cached }
-        let token = try KeychainReader.claudeAccessToken()
-        cachedToken = token
-        return token
     }
 
     // MARK: - File watcher (Stop hook trigger)
