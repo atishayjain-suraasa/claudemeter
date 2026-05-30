@@ -8,7 +8,6 @@ struct PopoverView: View {
     @State private var displayedSession: Double = 0
     @State private var displayedWeekly: Double = 0
     @State private var now = Date()
-    @State private var ticker: Timer?
 
     var body: some View {
         Group {
@@ -21,15 +20,14 @@ struct PopoverView: View {
         }
         .frame(width: 260)
         .background(.regularMaterial)
-        .onDisappear { stopTicker(); showPrefs = false }
-        // Seed displayed values immediately on appear (no animation)
+        .onDisappear { showPrefs = false }
+        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now = $0 }
         .task {
+            // Seed displayed values before first refresh so there's no flash from 0
             displayedSession = service.snapshot.sessionUtilization
             displayedWeekly = service.snapshot.weeklyUtilization
             await service.refresh()
-            startTicker()
         }
-        // Animate counter upward when new value is higher; snap instantly for drops
         .onChange(of: service.snapshot.sessionUtilization) { old, new in
             if new > old {
                 withAnimation(.easeOut(duration: 0.7)) { displayedSession = new }
@@ -109,22 +107,17 @@ struct PopoverView: View {
         let f = DateFormatter(); f.timeStyle = .short
         return f.string(from: service.snapshot.updatedAt)
     }
-
-    private func startTicker() {
-        ticker = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in now = Date() }
-    }
-    private func stopTicker() { ticker?.invalidate(); ticker = nil }
 }
 
 // MARK: - Usage row
 
 private struct UsageRow: View {
     let label: String
-    let displayed: Double   // animated value for the number + bar
-    let live: Double        // real value (for color thresholds)
+    let displayed: Double
+    let live: Double
     let resetDate: Date
     let state: RefreshState
-    let now: Date           // passed from parent ticker so reset timer updates
+    let now: Date
 
     private var barColor: Color {
         live >= 0.85 ? .red : live >= 0.60 ? .orange : .accentColor
@@ -148,9 +141,12 @@ private struct UsageRow: View {
             HStack {
                 Text(label).font(.system(size: 13, weight: .medium))
                 Spacer()
-                AnimatedPct(value: displayed)
+                // .contentTransition(.numericText()) smoothly counts digits up/down — macOS 14+
+                Text("\(Int((displayed * 100).rounded()))%")
                     .font(.system(size: 13, weight: .semibold).monospacedDigit())
                     .foregroundStyle(live >= 0.85 ? .red : .primary)
+                    .contentTransition(.numericText())
+                    .animation(.easeOut(duration: 0.7), value: displayed)
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
@@ -160,23 +156,11 @@ private struct UsageRow: View {
                     RoundedRectangle(cornerRadius: 2)
                         .fill(barColor)
                         .frame(width: geo.size.width * displayed, height: 4)
+                        .animation(.easeOut(duration: 0.7), value: displayed)
                 }
             }
             .frame(height: 4)
             Text(resetText).font(.system(size: 11)).foregroundStyle(.secondary)
         }
-    }
-}
-
-// Animatable percentage — SwiftUI interpolates `value` each frame so the integer
-// counts up smoothly from the old value to the new one.
-private struct AnimatedPct: View, Animatable {
-    var value: Double
-    var animatableData: Double {
-        get { value }
-        set { value = newValue }
-    }
-    var body: some View {
-        Text("\(Int((value * 100).rounded()))%")
     }
 }
