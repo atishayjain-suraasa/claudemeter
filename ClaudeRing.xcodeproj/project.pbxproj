@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3284E129016A0A9E46FF8A32 /* MenuBarIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C7A65C03F7D521D884A2BC /* MenuBarIcon.swift */; };
 		40A03450724DFB0ADC20A693 /* KeychainReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E1904C45F609BB9C4111FC /* KeychainReader.swift */; };
 		852192C7376A35D78B4D946F /* ClaudeRingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 701D71803D9CCEFD6F270869 /* ClaudeRingApp.swift */; };
 		87372C779DFE6569F73918A7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CEED73C73797A278040BF74C /* Assets.xcassets */; };
@@ -21,7 +20,6 @@
 /* Begin PBXFileReference section */
 		059324948F3588482E00109F /* AnthropicClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnthropicClient.swift; sourceTree = "<group>"; };
 		0E903CDC03253D808C8BEBB9 /* UsageSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSnapshot.swift; sourceTree = "<group>"; };
-		50C7A65C03F7D521D884A2BC /* MenuBarIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarIcon.swift; sourceTree = "<group>"; };
 		701D71803D9CCEFD6F270869 /* ClaudeRingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeRingApp.swift; sourceTree = "<group>"; };
 		7BDCD807645A6B475762A8FE /* ClaudeRing.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClaudeRing.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8432FEE5516530CD5C82EAB2 /* PreferencesSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesSheet.swift; sourceTree = "<group>"; };
@@ -54,7 +52,6 @@
 				059324948F3588482E00109F /* AnthropicClient.swift */,
 				701D71803D9CCEFD6F270869 /* ClaudeRingApp.swift */,
 				90E1904C45F609BB9C4111FC /* KeychainReader.swift */,
-				50C7A65C03F7D521D884A2BC /* MenuBarIcon.swift */,
 				9B0696D9D077168EFA75A160 /* PopoverView.swift */,
 				8432FEE5516530CD5C82EAB2 /* PreferencesSheet.swift */,
 				B3C1F1BF5F117F56C1BAFEB0 /* UsageService.swift */,
@@ -161,7 +158,6 @@
 				ECBC2E936EF925BCF9E65287 /* AnthropicClient.swift in Sources */,
 				852192C7376A35D78B4D946F /* ClaudeRingApp.swift in Sources */,
 				40A03450724DFB0ADC20A693 /* KeychainReader.swift in Sources */,
-				3284E129016A0A9E46FF8A32 /* MenuBarIcon.swift in Sources */,
 				9ACF8852A4A75B1E05E89C5D /* PopoverView.swift in Sources */,
 				FE2A256A2A4A0B4C8EB153AE /* PreferencesSheet.swift in Sources */,
 				BF84D41FE80E3A9564BDE93E /* UsageService.swift in Sources */,

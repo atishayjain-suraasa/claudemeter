@@ -2,7 +2,6 @@ import SwiftUI
 
 struct PopoverView: View {
     @Environment(UsageService.self) var service
-    let onClose: () -> Void
 
     @State private var showPrefs = false
     @State private var now = Date()
@@ -82,7 +81,7 @@ struct PopoverView: View {
             stopTicker()
             showPrefs = false   // reset so next open starts fresh
         }
-        .sheet(isPresented: $showPrefs, onDismiss: { showPrefs = false }) {
+        .sheet(isPresented: $showPrefs) {
             PreferencesSheet()
                 .environment(service)
         }
