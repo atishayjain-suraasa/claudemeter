@@ -14,6 +14,7 @@
 		7E67DE4AD6805432917EF905 /* StopHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A17B1721BAB5E5D29009EB9 /* StopHookInstaller.swift */; };
 		834C27103A0FE9399BCAB72E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA974F978053AF0E21912445 /* Assets.xcassets */; };
 		89E237AF98BF5DE694F950FC /* ClaudeMeterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48181134F280608665A6EE78 /* ClaudeMeterApp.swift */; };
+		9789F64E7033647B1A426781 /* VisualEffectBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 235BF84B0AC19FC63EE4E541 /* VisualEffectBackground.swift */; };
 		B016ED1F2DAFFF2B90E81BB0 /* UsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE33EFDFE5C751A98D64FB3 /* UsageSnapshot.swift */; };
 		CB8235C37EB4120FF0730717 /* UsageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E1E7CCB717DC65BB5C6ABC /* UsageService.swift */; };
 		D02B8FDB36D5AA3DA3F2F01F /* ClaudeRefreshTrigger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C726934A219964AF0BC6485 /* ClaudeRefreshTrigger.swift */; };
@@ -25,12 +26,12 @@
 		00E1E7CCB717DC65BB5C6ABC /* UsageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageService.swift; sourceTree = "<group>"; };
 		0CE33EFDFE5C751A98D64FB3 /* UsageSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSnapshot.swift; sourceTree = "<group>"; };
 		1DBB3CBACB6B0410A5ECB9F9 /* PreferencesSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesSheet.swift; sourceTree = "<group>"; };
+		235BF84B0AC19FC63EE4E541 /* VisualEffectBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffectBackground.swift; sourceTree = "<group>"; };
 		3A17B1721BAB5E5D29009EB9 /* StopHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopHookInstaller.swift; sourceTree = "<group>"; };
 		3C17D353CE9AA7433BFD22EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		48181134F280608665A6EE78 /* ClaudeMeterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeMeterApp.swift; sourceTree = "<group>"; };
 		6C726934A219964AF0BC6485 /* ClaudeRefreshTrigger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeRefreshTrigger.swift; sourceTree = "<group>"; };
 		6C9490E456192838C4B1CD6F /* ClaudeMeter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClaudeMeter.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		83083A9FC57F6E99332C354B /* ClaudeRing.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ClaudeRing.entitlements; sourceTree = "<group>"; };
 		980EB67CF072851B720C24F9 /* PopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverView.swift; sourceTree = "<group>"; };
 		AA974F978053AF0E21912445 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D3A6593396128D643E6DC525 /* AnthropicClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnthropicClient.swift; sourceTree = "<group>"; };
@@ -52,9 +53,9 @@
 				1DBB3CBACB6B0410A5ECB9F9 /* PreferencesSheet.swift */,
 				3A17B1721BAB5E5D29009EB9 /* StopHookInstaller.swift */,
 				00E1E7CCB717DC65BB5C6ABC /* UsageService.swift */,
+				235BF84B0AC19FC63EE4E541 /* VisualEffectBackground.swift */,
 				A45F29704C57B20B428C17F6 /* Models */,
 				FDF5D771596BED41F732FAFC /* Resources */,
-				87F43EB348DEE1701A9FCCAE /* Sources */,
 			);
 			path = ClaudeMeter;
 			sourceTree = "<group>";
@@ -75,13 +76,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		87F43EB348DEE1701A9FCCAE /* Sources */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Sources;
-			sourceTree = "<group>";
-		};
 		A45F29704C57B20B428C17F6 /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -94,7 +88,6 @@
 			isa = PBXGroup;
 			children = (
 				AA974F978053AF0E21912445 /* Assets.xcassets */,
-				83083A9FC57F6E99332C354B /* ClaudeRing.entitlements */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -180,6 +173,7 @@
 				7E67DE4AD6805432917EF905 /* StopHookInstaller.swift in Sources */,
 				CB8235C37EB4120FF0730717 /* UsageService.swift in Sources */,
 				B016ED1F2DAFFF2B90E81BB0 /* UsageSnapshot.swift in Sources */,
+				9789F64E7033647B1A426781 /* VisualEffectBackground.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

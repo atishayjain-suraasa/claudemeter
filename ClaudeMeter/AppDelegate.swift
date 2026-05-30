@@ -81,11 +81,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let button = statusItem.button else { return }
         if popover.isShown { popover.close() }
 
+        // VisualEffectBackground inside PopoverView gives the popover its proper
+        // material — no need to force controller.view.appearance, which doesn't
+        // propagate correctly before the view is added to a window anyway.
         let controller = NSHostingController(
             rootView: PopoverView(openPrefs: { [weak self] in self?.openPrefs() })
                 .environment(service)
         )
-        controller.view.appearance = NSApp.effectiveAppearance
         popover.contentViewController = controller
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
     }
