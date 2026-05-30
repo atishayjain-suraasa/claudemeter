@@ -7,7 +7,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
     private var iconUpdateTask: Task<Void, Never>?
-    private var openWithPrefs = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
@@ -71,28 +70,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func togglePopover() {
-        guard let button = statusItem.button else { return }
         if popover.isShown {
             popover.performClose(nil)
-            return
+        } else {
+            showPopover(withPrefs: false)
         }
+    }
 
-        let initialView = openWithPrefs
-        openWithPrefs = false
+    @objc func openPrefs() {
+        showPopover(withPrefs: true)
+    }
+
+    private func showPopover(withPrefs: Bool) {
+        guard let button = statusItem.button else { return }
+
+        // Synchronous close — performClose is animated and leaves isShown=true
+        // for a frame, which would block any subsequent show() call.
+        if popover.isShown { popover.close() }
 
         let controller = NSHostingController(
-            rootView: PopoverView(initiallyShowPrefs: initialView)
+            rootView: PopoverView(initiallyShowPrefs: withPrefs)
                 .environment(service)
         )
         controller.view.appearance = NSApp.effectiveAppearance
         popover.contentViewController = controller
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-    }
-
-    @objc func openPrefs() {
-        openWithPrefs = true
-        if popover.isShown { popover.performClose(nil) }
-        togglePopover()
     }
 
     // MARK: - Icon updater
