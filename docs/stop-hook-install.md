@@ -20,7 +20,7 @@ Open `~/.claude/settings.json` and add the `hooks` block. If the file already ha
         "hooks": [
           {
             "type": "command",
-            "command": "curl -fsS --max-time 1 --unix-socket \"$HOME/Library/Application Support/ClaudeRing/refresh.sock\" http://localhost/refresh > /dev/null 2>&1 || true"
+            "command": "date +%s > \"$HOME/Library/Application Support/ClaudeRing/trigger\" 2>/dev/null || true"
           }
         ]
       }
@@ -29,7 +29,7 @@ Open `~/.claude/settings.json` and add the `hooks` block. If the file already ha
 }
 ```
 
-The `|| true` at the end means: if ClaudeRing isn't running, the hook does nothing. Removing the app won't break Claude Code.
+The `|| true` at the end means: if ClaudeRing isn't running or the file doesn't exist, the hook does nothing. ClaudeRing watches this file for changes and refreshes within 1 second of the hook firing.
 
 ## How to uninstall
 

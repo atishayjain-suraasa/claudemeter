@@ -2,6 +2,8 @@ import SwiftUI
 
 struct PopoverView: View {
     @Environment(UsageService.self) var service
+    let onClose: () -> Void
+
     @State private var showPrefs = false
     @State private var now = Date()
     @State private var ticker: Timer?
@@ -29,8 +31,7 @@ struct PopoverView: View {
 
             Divider()
 
-            HStack {
-                // Updated-at / error status
+            HStack(spacing: 8) {
                 Group {
                     switch service.refreshState {
                     case .idle:
@@ -51,6 +52,7 @@ struct PopoverView: View {
                     }
                 }
                 .font(.system(size: 11))
+                .lineLimit(1)
 
                 Spacer()
 
@@ -71,15 +73,18 @@ struct PopoverView: View {
             .padding(.vertical, 8)
         }
         .frame(width: 260)
-        .sheet(isPresented: $showPrefs) {
-            PreferencesSheet()
-                .environment(service)
-        }
         .task {
             await service.refresh()
             startTicker()
         }
-        .onDisappear { stopTicker() }
+        .onDisappear {
+            stopTicker()
+            showPrefs = false   // reset so next open starts fresh
+        }
+        .sheet(isPresented: $showPrefs, onDismiss: { showPrefs = false }) {
+            PreferencesSheet()
+                .environment(service)
+        }
     }
 
     private var updatedText: String {

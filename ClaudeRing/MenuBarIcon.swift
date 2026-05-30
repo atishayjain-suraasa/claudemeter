@@ -1,43 +1,45 @@
 import SwiftUI
 
-struct MenuBarIcon: View {
-    let utilization: Double  // 0.0–1.0
+// Rendered via ImageRenderer to NSImage — not placed directly in a MenuBarExtra label
+struct MenuBarIconView: View {
+    let utilization: Double
     let isRefreshing: Bool
     let hasFailed: Bool
 
     private var ringColor: Color {
         if hasFailed { return .red }
         if utilization >= 0.85 { return .red }
-        if utilization >= 0.60 { return Color.orange }
-        return Color.primary.opacity(0.5)
+        if utilization >= 0.60 { return .orange }
+        return Color(white: 0.2)
     }
 
     var body: some View {
         ZStack {
-            // Progress ring
+            // Background ring track
             Circle()
-                .stroke(Color.primary.opacity(0.15), lineWidth: 1.5)
-                .frame(width: 18, height: 18)
+                .stroke(Color(white: 0.5).opacity(0.3), lineWidth: 2)
+                .frame(width: 20, height: 20)
 
+            // Progress arc
             Circle()
-                .trim(from: 0, to: isRefreshing ? 0.25 : utilization)
-                .stroke(ringColor, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-                .frame(width: 18, height: 18)
+                .trim(from: 0, to: max(0.02, isRefreshing ? 0.25 : utilization))
+                .stroke(ringColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .frame(width: 20, height: 20)
                 .rotationEffect(.degrees(-90))
-                .animation(isRefreshing ? .linear(duration: 1).repeatForever(autoreverses: false) : .easeInOut(duration: 0.4), value: isRefreshing ? 1.0 : utilization)
 
-            // Claude mesh logo — drawn as a simplified asterisk/sparkle using SF Symbol
-            // "sparkle" is the closest built-in symbol to the Claude mark
-            Image(systemName: "sparkle")
-                .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(Color.primary)
+            // Claude tray icon (template PNG from Claude.app bundle)
+            Image("ClaudeIcon")
+                .resizable()
+                .renderingMode(.template)
+                .foregroundColor(Color(white: 0.15))
+                .frame(width: 12, height: 12)
 
-            // Red dot overlay for auth failure
+            // Red dot for auth failure
             if hasFailed {
                 Circle()
                     .fill(Color.red)
                     .frame(width: 5, height: 5)
-                    .offset(x: 6, y: -6)
+                    .offset(x: 7, y: -7)
             }
         }
         .frame(width: 22, height: 22)

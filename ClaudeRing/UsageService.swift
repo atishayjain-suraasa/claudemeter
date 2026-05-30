@@ -1,6 +1,5 @@
 import Foundation
 import AppKit
-import Network
 import ServiceManagement
 
 @MainActor
@@ -10,33 +9,39 @@ final class UsageService {
     var refreshState: RefreshState = .idle
 
     private var pollTimer: Timer?
-    private var listener: NWListener?
-    private let socketPath: String = {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = support.appendingPathComponent("ClaudeRing", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("refresh.sock").path
-    }()
+    private var fileWatchTimer: Timer?
+    private var cachedToken: String?               // avoids re-prompting keychain on every refresh
+    private var lastTriggerMtime: Date = .distantPast
 
     private let claudeBundleID = "com.anthropic.claudefordesktop"
 
+    private let triggerPath: String = {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let dir = support.appendingPathComponent("ClaudeRing", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("trigger").path
+    }()
+
     private var refreshIntervalMinutes: Int {
-        UserDefaults.standard.integer(forKey: "claudering.refreshInterval").nonZeroOr(5)
+        let stored = UserDefaults.standard.integer(forKey: "claudering.refreshInterval")
+        return stored == 0 ? 5 : stored
     }
 
     init() {
-        startUnixSocketListener()
+        startFileWatcher()
         observeClaudeDesktopLifecycle()
         observeWake()
         Task { await refresh() }
     }
+
+    // MARK: - Refresh
 
     func refresh() async {
         guard refreshState != .refreshing else { return }
         refreshState = .refreshing
 
         do {
-            let token = try KeychainReader.claudeAccessToken()
+            let token = try resolveToken()
             let data = try await AnthropicClient.fetchUsage(token: token)
             snapshot = UsageSnapshot(
                 sessionUtilization: data.sessionUtilization,
@@ -47,12 +52,16 @@ final class UsageService {
             )
             refreshState = .idle
         } catch KeychainError.itemNotFound, KeychainError.missingToken {
+            cachedToken = nil
             snapshot = .empty
             refreshState = .failed(.authFailed)
         } catch KeychainError.accessDenied {
+            cachedToken = nil
             snapshot = .empty
             refreshState = .failed(.authFailed)
         } catch AnthropicClient.ClientError.unauthorized {
+            // Token expired — clear cache so next refresh re-reads from keychain
+            cachedToken = nil
             snapshot = .empty
             refreshState = .failed(.authFailed)
         } catch AnthropicClient.ClientError.networkError {
@@ -62,7 +71,35 @@ final class UsageService {
         }
     }
 
-    // MARK: - Desktop app lifecycle polling
+    // Returns cached token or reads from keychain (prompts user once per app session)
+    private func resolveToken() throws -> String {
+        if let cached = cachedToken { return cached }
+        let token = try KeychainReader.claudeAccessToken()
+        cachedToken = token
+        return token
+    }
+
+    // MARK: - File watcher (Stop hook trigger)
+    // Stop hook writes a timestamp to the trigger file; we detect the mtime change.
+
+    private func startFileWatcher() {
+        // Create trigger file if absent so the watcher has something to stat
+        if !FileManager.default.fileExists(atPath: triggerPath) {
+            FileManager.default.createFile(atPath: triggerPath, contents: nil)
+        }
+
+        fileWatchTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let attrs = try? FileManager.default.attributesOfItem(atPath: self.triggerPath)
+                guard let mtime = attrs?[.modificationDate] as? Date, mtime > self.lastTriggerMtime else { return }
+                self.lastTriggerMtime = mtime
+                await self.refresh()
+            }
+        }
+    }
+
+    // MARK: - Claude desktop app lifecycle polling
 
     private func observeClaudeDesktopLifecycle() {
         let ws = NSWorkspace.shared.notificationCenter
@@ -84,9 +121,7 @@ final class UsageService {
             Task { @MainActor [weak self] in self?.stopPollTimer() }
         }
 
-        if isClaudeDesktopRunning() {
-            startPollTimer()
-        }
+        if isClaudeDesktopRunning() { startPollTimer() }
     }
 
     private func isClaudeDesktopRunning() -> Bool {
@@ -97,9 +132,7 @@ final class UsageService {
         stopPollTimer()
         let interval = TimeInterval(refreshIntervalMinutes * 60)
         pollTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                await self?.refresh()
-            }
+            Task { @MainActor [weak self] in await self?.refresh() }
         }
     }
 
@@ -120,38 +153,9 @@ final class UsageService {
         }
     }
 
-    // MARK: - Unix socket listener (Stop hook trigger)
-
-    private func startUnixSocketListener() {
-        try? FileManager.default.removeItem(atPath: socketPath)
-
-        let params = NWParameters()
-        params.allowLocalEndpointReuse = true
-        params.acceptLocalOnly = true
-
-        guard let listener = try? NWListener(using: params) else { return }
-        self.listener = listener
-
-        listener.newConnectionHandler = { [weak self] connection in
-            connection.start(queue: .global())
-            connection.cancel()
-            Task { @MainActor [weak self] in await self?.refresh() }
-        }
-
-        let endpoint = NWEndpoint.unix(path: socketPath)
-        listener.parameters.requiredLocalEndpoint = endpoint
-        listener.start(queue: .global())
-    }
-
     // MARK: - Interval update (called from PreferencesSheet when changed)
 
     func refreshIntervalDidChange() {
-        if isClaudeDesktopRunning() {
-            startPollTimer()
-        }
+        if isClaudeDesktopRunning() { startPollTimer() }
     }
-}
-
-private extension Int {
-    func nonZeroOr(_ fallback: Int) -> Int { self == 0 ? fallback : self }
 }
