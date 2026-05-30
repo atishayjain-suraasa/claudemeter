@@ -30,8 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             button.image = image
             button.imagePosition = .imageLeft
         }
-        button.title = " —%"
-        button.font = .monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+        button.attributedTitle = Self.buttonAttributedTitle(" —%", color: .labelColor)
 
         // Setting statusItem.menu makes the click handler automatic — left-click
         // or right-click both open the menu, native positioning below the icon,
@@ -122,31 +121,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: - Icon updater
 
+    // contentTintColor on NSStatusBarButton is unreliable on Sequoia — the button
+    // spends its first tick in VibrantLight before settling in VibrantDark, leaving
+    // the tint stuck. attributedTitle resolves dynamic colors at draw time in the
+    // button's actual drawing context, so labelColor / systemOrange / systemRed all
+    // render correctly without any manual appearance inspection.
     private func startIconUpdater() {
         iconUpdateTask = Task { [weak self] in
             var lastPct = -1
             var lastFailed = false
             while !Task.isCancelled {
                 guard let self else { return }
-                let pct = Int(self.service.snapshot.sessionUtilization * 100)
+                let u = self.service.snapshot.sessionUtilization
+                let pct = Int(u * 100)
                 let failed: Bool
                 if case .failed(.authFailed) = self.service.refreshState { failed = true } else { failed = false }
 
                 if pct != lastPct || failed != lastFailed {
                     lastPct = pct
                     lastFailed = failed
-                    self.statusItem.button?.title = " \(pct)%"
-                    let u = self.service.snapshot.sessionUtilization
-                    if failed || u >= 0.85 {
-                        self.statusItem.button?.contentTintColor = .systemRed
-                    } else if u >= 0.60 {
-                        self.statusItem.button?.contentTintColor = .systemOrange
-                    } else {
-                        self.statusItem.button?.contentTintColor = .labelColor
-                    }
+                    let color: NSColor = failed || u >= 0.85 ? .systemRed
+                        : u >= 0.60 ? .systemOrange
+                        : .labelColor
+                    self.statusItem.button?.attributedTitle =
+                        Self.buttonAttributedTitle(" \(pct)%", color: color)
                 }
                 try? await Task.sleep(nanoseconds: 500_000_000)
             }
         }
+    }
+
+    private static func buttonAttributedTitle(_ text: String, color: NSColor) -> NSAttributedString {
+        NSAttributedString(string: text, attributes: [
+            .foregroundColor: color,
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+        ])
     }
 }
