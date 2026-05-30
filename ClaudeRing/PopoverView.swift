@@ -96,7 +96,7 @@ struct PopoverView: View {
             Text(service.snapshot.updatedAt == .distantPast ? "Loading…" : "Refreshing…")
                 .foregroundStyle(.secondary)
         case .failed(.authFailed):
-            Text("Auth failed · open Claude Code").foregroundStyle(.red)
+            Text("Sign in to Claude Code to refresh").foregroundStyle(.red)
         case .failed(.offline):
             Text("Offline · \(updatedText)").foregroundStyle(.secondary)
         case .failed(.headersUnreadable):

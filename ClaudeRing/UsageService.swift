@@ -40,11 +40,8 @@ final class UsageService {
         refreshState = .refreshing
 
         do {
-            // Read keychain fresh on every refresh — no in-memory cache. macOS keychain
-            // ACL ("Always Allow") makes repeated reads silent, and reading fresh means
-            // Claude Code's token refreshes propagate instantly without any special handling.
-            let token = try KeychainReader.claudeAccessToken()
-            let data = try await AnthropicClient.fetchUsage(token: token)
+            let credentials = try await getValidCredentials()
+            let data = try await AnthropicClient.fetchUsage(token: credentials.accessToken)
             snapshot = UsageSnapshot(
                 sessionUtilization: data.sessionUtilization,
                 weeklyUtilization: data.weeklyUtilization,
@@ -57,13 +54,44 @@ final class UsageService {
             refreshState = .failed(.authFailed)
         } catch KeychainError.accessDenied {
             refreshState = .failed(.authFailed)
-        } catch AnthropicClient.ClientError.unauthorized {
+        } catch TokenRefreshError.invalidGrant {
             refreshState = .failed(.authFailed)
-        } catch AnthropicClient.ClientError.networkError {
+        } catch TokenRefreshError.network, AnthropicClient.ClientError.networkError {
             refreshState = .failed(.offline)
+        } catch AnthropicClient.ClientError.unauthorized {
+            // Server says token's bad despite us thinking it was fresh — could happen if
+            // Claude Code rotated the refresh token between our read and our refresh attempt,
+            // or if the access token is invalidated server-side. Force refresh and retry once.
+            do {
+                let creds = try KeychainReader.loadCredentials()
+                let refreshed = try await TokenRefresher.refresh(using: creds)
+                let data = try await AnthropicClient.fetchUsage(token: refreshed.accessToken)
+                snapshot = UsageSnapshot(
+                    sessionUtilization: data.sessionUtilization,
+                    weeklyUtilization: data.weeklyUtilization,
+                    sessionReset: data.sessionReset,
+                    weeklyReset: data.weeklyReset,
+                    updatedAt: Date()
+                )
+                refreshState = .idle
+            } catch {
+                refreshState = .failed(.authFailed)
+            }
         } catch {
             refreshState = .failed(.headersUnreadable)
         }
+    }
+
+    // Reads the keychain and, if the access token is expired or expiring within 60s,
+    // refreshes it (writes new tokens back). Returns a credentials object that's
+    // guaranteed valid for at least the next ~60 seconds.
+    private func getValidCredentials() async throws -> ClaudeCredentials {
+        let creds = try KeychainReader.loadCredentials()
+        let expiryBuffer: TimeInterval = 60
+        if creds.expiresAt.timeIntervalSinceNow > expiryBuffer {
+            return creds
+        }
+        return try await TokenRefresher.refresh(using: creds)
     }
 
     // MARK: - File watcher (Stop hook trigger)

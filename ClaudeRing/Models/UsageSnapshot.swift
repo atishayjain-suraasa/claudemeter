@@ -7,7 +7,7 @@ enum RefreshState: Equatable {
 }
 
 enum RefreshError: Equatable {
-    case authFailed
+    case authFailed          // refresh token dead — user must sign in to Claude Code again
     case offline
     case headersUnreadable
 }
