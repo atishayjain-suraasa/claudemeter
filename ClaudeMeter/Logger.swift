@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-// File-based logger. Writes to ~/Library/Logs/ClaudeRing/claudering.log.
+// File-based logger. Writes to ~/Library/Logs/ClaudeMeter/claudemeter.log.
 // Rotates when the file exceeds maxBytes — keeps one archive (.1).
 // Never logs token values or API response bodies; only category + outcome + timing.
 
@@ -26,10 +26,10 @@ final class Logger {
     private init() {
         let dir = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first!
             .appendingPathComponent("Logs", isDirectory: true)
-            .appendingPathComponent("ClaudeRing", isDirectory: true)
+            .appendingPathComponent("ClaudeMeter", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        self.logURL = dir.appendingPathComponent("claudering.log")
-        self.archiveURL = dir.appendingPathComponent("claudering.log.1")
+        self.logURL = dir.appendingPathComponent("claudemeter.log")
+        self.archiveURL = dir.appendingPathComponent("claudemeter.log.1")
 
         self.formatter = DateFormatter()
         self.formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
@@ -79,7 +79,7 @@ final class Logger {
     // current log and (if present) the archive.
     func diagnosticBlob(lineLimit: Int = 200) -> String {
         let header = """
-        ClaudeRing Diagnostic
+        ClaudeMeter Diagnostic
         =====================
         App version : \(appVersion)
         macOS       : \(osVersion)

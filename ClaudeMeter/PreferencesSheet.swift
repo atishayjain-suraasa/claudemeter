@@ -6,7 +6,7 @@ private struct PreferencesContent: View {
     @Environment(UsageService.self) var service
 
     @State private var selectedInterval: Int = {
-        let v = UserDefaults.standard.integer(forKey: "claudering.refreshInterval")
+        let v = UserDefaults.standard.integer(forKey: "claudemeter.refreshInterval")
         return v == 0 ? 5 : v
     }()
     @State private var launchAtLogin = false
@@ -134,7 +134,7 @@ private struct PreferencesContent: View {
         }
         .onAppear { launchAtLogin = currentLoginState() }
         .onChange(of: selectedInterval) { _, new in
-            UserDefaults.standard.set(new, forKey: "claudering.refreshInterval")
+            UserDefaults.standard.set(new, forKey: "claudemeter.refreshInterval")
             service.refreshIntervalDidChange()
         }
     }

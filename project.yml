@@ -1,4 +1,4 @@
-name: ClaudeRing
+name: ClaudeMeter
 options:
   bundleIdPrefix: com.atishayjain
   deploymentTarget:
@@ -17,16 +17,16 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
 
 targets:
-  ClaudeRing:
+  ClaudeMeter:
     type: application
     platform: macOS
     deploymentTarget: "14.0"
     info:
-      path: ClaudeRing/Info.plist
+      path: ClaudeMeter/Info.plist
       properties:
-        CFBundleName: ClaudeRing
-        CFBundleDisplayName: ClaudeRing
-        CFBundleIdentifier: com.atishayjain.claudering
+        CFBundleName: ClaudeMeter
+        CFBundleDisplayName: ClaudeMeter
+        CFBundleIdentifier: com.atishayjain.claudemeter
         CFBundleVersion: "1"
         CFBundleShortVersionString: "1.0.0"
         LSUIElement: true
@@ -34,19 +34,19 @@ targets:
         LSApplicationCategoryType: public.app-category.productivity
         NSHumanReadableCopyright: "© 2026 Atishay Jain. MIT License."
     entitlements:
-      path: ClaudeRing/Resources/ClaudeRing.entitlements
+      path: ClaudeMeter/Resources/ClaudeMeter.entitlements
       properties:
         com.apple.security.network.client: true
     sources:
-      - path: ClaudeRing
+      - path: ClaudeMeter
         excludes:
-          - Resources/ClaudeRing.entitlements
+          - Resources/ClaudeMeter.entitlements
           - Info.plist
     resources:
-      - ClaudeRing/Resources/Assets.xcassets
+      - ClaudeMeter/Resources/Assets.xcassets
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        CODE_SIGN_ENTITLEMENTS: ClaudeRing/Resources/ClaudeRing.entitlements
-        PRODUCT_BUNDLE_IDENTIFIER: com.atishayjain.claudering
+        CODE_SIGN_ENTITLEMENTS: ClaudeMeter/Resources/ClaudeMeter.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: com.atishayjain.claudemeter

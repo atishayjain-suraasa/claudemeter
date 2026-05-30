@@ -16,13 +16,13 @@ final class UsageService {
 
     private let triggerPath: String = {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = support.appendingPathComponent("ClaudeRing", isDirectory: true)
+        let dir = support.appendingPathComponent("ClaudeMeter", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("trigger").path
     }()
 
     private var refreshIntervalMinutes: Int {
-        let stored = UserDefaults.standard.integer(forKey: "claudering.refreshInterval")
+        let stored = UserDefaults.standard.integer(forKey: "claudemeter.refreshInterval")
         return stored == 0 ? 5 : stored
     }
 

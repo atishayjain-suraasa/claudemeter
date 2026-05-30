@@ -22,17 +22,17 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/release/ClaudeRing.app.zip
+          files: build/release/ClaudeMeter.app.zip
           generate_release_notes: true
           body: |
             ## Install
 
-            1. Download `ClaudeRing.app.zip` below
+            1. Download `ClaudeMeter.app.zip` below
             2. Unzip and move to `/Applications`
             3. Remove the macOS quarantine flag:
                ```
-               xattr -dr com.apple.quarantine /Applications/ClaudeRing.app
+               xattr -dr com.apple.quarantine /Applications/ClaudeMeter.app
                ```
-            4. Open ClaudeRing
+            4. Open ClaudeMeter
             5. Click **Always Allow** on the macOS keychain prompt
-            6. The ring appears in your menu bar
+            6. The icon appears in your menu bar

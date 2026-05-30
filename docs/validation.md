@@ -4,7 +4,7 @@
 
 ## Gate A — Keychain readability
 
-`security find-generic-password -s "Claude Code-credentials" -w` returns the full JSON payload including OAuth token from the terminal (and therefore from any app that has been granted keychain access). A one-time macOS keychain dialog will appear on first run of ClaudeRing. After the user clicks "Always Allow," subsequent runs do not re-prompt for the same binary.
+`security find-generic-password -s "Claude Code-credentials" -w` returns the full JSON payload including OAuth token from the terminal (and therefore from any app that has been granted keychain access). A one-time macOS keychain dialog will appear on first run of ClaudeMeter. After the user clicks "Always Allow," subsequent runs do not re-prompt for the same binary.
 
 **Result: PASS**
 

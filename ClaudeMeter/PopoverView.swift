@@ -84,7 +84,7 @@ struct PopoverView: View {
         case .failed(.offline):
             Text("Offline · \(updatedText)").foregroundStyle(.secondary)
         case .failed(.headersUnreadable):
-            Text("ClaudeRing may need an update").foregroundStyle(.secondary)
+            Text("ClaudeMeter may need an update").foregroundStyle(.secondary)
         }
     }
 

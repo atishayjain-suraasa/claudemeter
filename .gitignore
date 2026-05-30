@@ -5,5 +5,5 @@ build/
 *.xcworkspace/xcuserdata/
 *.xcodeproj/project.xcworkspace/xcshareddata/
 DerivedData/
-/ClaudeRing/Info.plist
+/ClaudeMeter/Info.plist
 build/

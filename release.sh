@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds a release ClaudeRing.app.zip in ./build/release/
+# Builds a release ClaudeMeter.app.zip in ./build/release/
 # Requires: full Xcode installed (not just CLI tools) — xcodebuild
 # Usage: ./release.sh
 set -euo pipefail
@@ -14,10 +14,10 @@ mkdir -p build/release
 
 echo "→ Archiving Release build..."
 xcodebuild \
-  -project ClaudeRing.xcodeproj \
-  -scheme ClaudeRing \
+  -project ClaudeMeter.xcodeproj \
+  -scheme ClaudeMeter \
   -configuration Release \
-  -archivePath build/release/ClaudeRing.xcarchive \
+  -archivePath build/release/ClaudeMeter.xcarchive \
   -destination 'generic/platform=macOS' \
   CODE_SIGN_STYLE=Manual \
   CODE_SIGN_IDENTITY="-" \
@@ -44,26 +44,26 @@ EOF
 
 xcodebuild \
   -exportArchive \
-  -archivePath build/release/ClaudeRing.xcarchive \
+  -archivePath build/release/ClaudeMeter.xcarchive \
   -exportPath build/release/export \
   -exportOptionsPlist build/release/export-options.plist >/dev/null
 
 echo "→ Ad-hoc signing..."
 codesign --force --sign - \
-  --entitlements ClaudeRing/Resources/ClaudeRing.entitlements \
-  build/release/export/ClaudeRing.app
+  --entitlements ClaudeMeter/Resources/ClaudeMeter.entitlements \
+  build/release/export/ClaudeMeter.app
 
 echo "→ Zipping..."
 cd build/release/export
-zip -qr ../ClaudeRing.app.zip ClaudeRing.app
+zip -qr ../ClaudeMeter.app.zip ClaudeMeter.app
 cd ../../..
 
-SIZE=$(du -h build/release/ClaudeRing.app.zip | cut -f1)
+SIZE=$(du -h build/release/ClaudeMeter.app.zip | cut -f1)
 echo ""
-echo "✓ Built: build/release/ClaudeRing.app.zip ($SIZE)"
+echo "✓ Built: build/release/ClaudeMeter.app.zip ($SIZE)"
 echo ""
 echo "Test it:"
-echo "  open build/release/export/ClaudeRing.app"
+echo "  open build/release/export/ClaudeMeter.app"
 echo ""
 echo "Distribute it:"
-echo "  Upload build/release/ClaudeRing.app.zip to GitHub Releases"
+echo "  Upload build/release/ClaudeMeter.app.zip to GitHub Releases"
