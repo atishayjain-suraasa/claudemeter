@@ -1,43 +1,17 @@
 import SwiftUI
 
+// Content for the status item's NSMenu. Hosted as NSMenuItem.view; the menu
+// itself provides the frosted-glass background. Preferences and Quit are
+// native menu items below this view.
+
 struct PopoverView: View {
     @Environment(UsageService.self) var service
-    let openPrefs: () -> Void
 
     @State private var displayedSession: Double = 0
     @State private var displayedWeekly: Double = 0
     @State private var now = Date()
 
     var body: some View {
-        mainView
-        .frame(width: 260)
-        // No background — the parent NSPanel's NSVisualEffectView provides the
-        // frosted-glass material and rounded corners. Adding a SwiftUI background
-        // here would layer redundantly and dim the appearance.
-        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now = $0 }
-        .task {
-            // Seed displayed values before first refresh so there's no flash from 0
-            displayedSession = service.snapshot.sessionUtilization
-            displayedWeekly = service.snapshot.weeklyUtilization
-            await service.refresh()
-        }
-        .onChange(of: service.snapshot.sessionUtilization) { old, new in
-            if new > old {
-                withAnimation(.easeOut(duration: 0.7)) { displayedSession = new }
-            } else {
-                displayedSession = new
-            }
-        }
-        .onChange(of: service.snapshot.weeklyUtilization) { old, new in
-            if new > old {
-                withAnimation(.easeOut(duration: 0.7)) { displayedWeekly = new }
-            } else {
-                displayedWeekly = new
-            }
-        }
-    }
-
-    private var mainView: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
                 UsageRow(label: "Session",
@@ -55,23 +29,35 @@ struct PopoverView: View {
                          now: now)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 12)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
 
-            Divider()
-
-            HStack(spacing: 8) {
-                statusText.font(.system(size: 11)).lineLimit(1)
-                Spacer()
-                Button { openPrefs() } label: {
-                    Image(systemName: "gear").font(.system(size: 12))
-                }
-                .buttonStyle(.plain).foregroundStyle(.secondary)
-                Button("Quit") { NSApplication.shared.terminate(nil) }
-                    .buttonStyle(.plain).font(.system(size: 12)).foregroundStyle(.secondary)
+            statusText
+                .font(.system(size: 11))
+                .lineLimit(1)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+        }
+        .frame(width: 260)
+        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now = $0 }
+        .task {
+            displayedSession = service.snapshot.sessionUtilization
+            displayedWeekly = service.snapshot.weeklyUtilization
+            await service.refresh()
+        }
+        .onChange(of: service.snapshot.sessionUtilization) { old, new in
+            if new > old {
+                withAnimation(.easeOut(duration: 0.7)) { displayedSession = new }
+            } else {
+                displayedSession = new
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+        }
+        .onChange(of: service.snapshot.weeklyUtilization) { old, new in
+            if new > old {
+                withAnimation(.easeOut(duration: 0.7)) { displayedWeekly = new }
+            } else {
+                displayedWeekly = new
+            }
         }
     }
 
@@ -134,7 +120,6 @@ private struct UsageRow: View {
             HStack {
                 Text(label).font(.system(size: 13, weight: .medium))
                 Spacer()
-                // .contentTransition(.numericText()) smoothly counts digits up/down — macOS 14+
                 Text("\(Int((displayed * 100).rounded()))%")
                     .font(.system(size: 13, weight: .semibold).monospacedDigit())
                     .foregroundStyle(live >= 0.85 ? .red : .primary)

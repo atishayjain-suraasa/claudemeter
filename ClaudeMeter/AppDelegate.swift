@@ -2,21 +2,19 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let service = UsageService()
     private var statusItem: NSStatusItem!
     private var iconUpdateTask: Task<Void, Never>?
 
-    // NSPopover gives us the system's proper frosted-glass blur — matches Bluetooth,
-    // Control Center, Shottr, etc. We use the well-known `shouldHideAnchor` private
-    // KVC key to suppress the arrow tail. Apple has kept this key working since
-    // 10.13; if they ever remove it, the arrow comes back but the app still works.
-    private var popover: NSPopover!
-    private static let popoverSize = NSSize(width: 260, height: 180)
+    // We use NSMenu (not NSPopover or NSPanel) for the status item's popup.
+    // NSMenu has the system's built-in frosted glass with proper desktop tint —
+    // matches Shottr, Apple's own menu bar UIs. Custom usage display goes in a
+    // NSMenuItem.view at the top; Preferences and Quit are native menu items.
+    private static let menuContentSize = NSSize(width: 260, height: 130)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
-        setupPopover()
         startIconUpdater()
     }
 
@@ -26,10 +24,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         guard let button = statusItem.button else { return }
 
-        button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-        button.target = self
-        button.action = #selector(handleClick)
-
         if let image = NSImage(named: "ClaudeIcon") {
             image.isTemplate = true
             image.size = NSSize(width: 16, height: 16)
@@ -38,75 +32,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         button.title = " —%"
         button.font = .monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+
+        // Setting statusItem.menu makes the click handler automatic — left-click
+        // or right-click both open the menu, native positioning below the icon,
+        // built-in click-outside dismissal.
+        statusItem.menu = buildMenu()
     }
 
-    @objc private func handleClick() {
-        guard let event = NSApp.currentEvent else { return }
-        if event.type == .rightMouseUp {
-            showContextMenu()
-        } else {
-            togglePopover()
-        }
-    }
+    // MARK: - Menu
 
-    private func showContextMenu() {
+    private func buildMenu() -> NSMenu {
         let menu = NSMenu()
+        menu.delegate = self
+        menu.autoenablesItems = false
 
-        let prefsItem = NSMenuItem(title: "Preferences…", action: #selector(openPrefs), keyEquivalent: ",")
+        // Usage display — SwiftUI hosted inside a custom NSMenuItem.view
+        let usageItem = NSMenuItem()
+        usageItem.isEnabled = false   // not selectable, no hover highlight on the slot
+        let hosting = NSHostingView(
+            rootView: PopoverView().environment(service)
+        )
+        hosting.frame = NSRect(origin: .zero, size: Self.menuContentSize)
+        // Transparent so the menu's vibrancy shows through
+        hosting.wantsLayer = true
+        hosting.layer?.backgroundColor = .clear
+        usageItem.view = hosting
+        menu.addItem(usageItem)
+
+        menu.addItem(.separator())
+
+        let prefsItem = NSMenuItem(title: "Preferences…",
+                                   action: #selector(openPrefs),
+                                   keyEquivalent: ",")
         prefsItem.target = self
         menu.addItem(prefsItem)
 
         menu.addItem(.separator())
 
-        let quitItem = NSMenuItem(title: "Quit ClaudeMeter", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "Quit ClaudeMeter",
+                                  action: #selector(NSApplication.terminate(_:)),
+                                  keyEquivalent: "q")
         menu.addItem(quitItem)
 
-        statusItem.menu = menu
-        statusItem.button?.performClick(nil)
-        statusItem.menu = nil
+        return menu
     }
 
-    // MARK: - Popover (NSPopover with arrow hidden via KVC)
-
-    private func setupPopover() {
-        popover = NSPopover()
-        popover.contentSize = Self.popoverSize
-        popover.behavior = .transient
-        popover.animates = true
-        // Private API: hides the arrow tail. Survives across macOS versions since 10.13.
-        // KVC lookup so the binary doesn't statically reference a private symbol —
-        // if Apple ever removes the key, this is a no-op (arrow reappears) rather
-        // than a crash or build failure.
-        popover.setValue(true, forKey: "shouldHideAnchor")
-    }
-
-    func togglePopover() {
-        if popover.isShown {
-            popover.performClose(nil)
-        } else {
-            showPopover()
-        }
-    }
-
-    private func showPopover() {
-        guard let button = statusItem.button else { return }
-        if popover.isShown { popover.close() }
-
-        let controller = NSHostingController(
-            rootView: PopoverView(openPrefs: { [weak self] in self?.openPrefs() })
-                .environment(service)
-        )
-        popover.contentViewController = controller
-
-        // Anchor to a 1px source rect at the LEFT edge of the button so the popover
-        // is left-aligned with the status item icon (default centering would place
-        // it under the percentage text instead). Matches the Bluetooth/Wi-Fi style.
-        let sourceRect = NSRect(x: 0, y: 0, width: 1, height: button.bounds.height)
-        popover.show(relativeTo: sourceRect, of: button, preferredEdge: .minY)
-    }
-
-    private func closePopover() {
-        popover?.performClose(nil)
+    // NSMenuDelegate — refresh data when the menu is about to appear so the
+    // numbers shown are current.
+    nonisolated func menuWillOpen(_ menu: NSMenu) {
+        Task { @MainActor in await self.service.refresh() }
     }
 
     // MARK: - Preferences window
@@ -118,8 +92,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var prefsWindow: NSWindow?
 
     @objc func openPrefs() {
-        closePopover()
-
         if prefsWindow == nil {
             let size = NSSize(width: 440, height: 560)
 
