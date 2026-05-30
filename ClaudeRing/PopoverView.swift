@@ -2,7 +2,11 @@ import SwiftUI
 
 struct PopoverView: View {
     @Environment(UsageService.self) var service
+    let openPrefs: () -> Void
+
     @State private var showPrefs = false
+    @State private var displayedSession: Double = 0
+    @State private var displayedWeekly: Double = 0
     @State private var now = Date()
     @State private var ticker: Timer?
 
@@ -16,29 +20,48 @@ struct PopoverView: View {
             }
         }
         .frame(width: 260)
-        .onDisappear {
-            stopTicker()
-            showPrefs = false
+        .background(.regularMaterial)
+        .onDisappear { stopTicker(); showPrefs = false }
+        // Seed displayed values immediately on appear (no animation)
+        .task {
+            displayedSession = service.snapshot.sessionUtilization
+            displayedWeekly = service.snapshot.weeklyUtilization
+            await service.refresh()
+            startTicker()
+        }
+        // Animate counter upward when new value is higher; snap instantly for drops
+        .onChange(of: service.snapshot.sessionUtilization) { old, new in
+            if new > old {
+                withAnimation(.easeOut(duration: 0.7)) { displayedSession = new }
+            } else {
+                displayedSession = new
+            }
+        }
+        .onChange(of: service.snapshot.weeklyUtilization) { old, new in
+            if new > old {
+                withAnimation(.easeOut(duration: 0.7)) { displayedWeekly = new }
+            } else {
+                displayedWeekly = new
+            }
         }
     }
-
-    // MARK: - Main view
 
     private var mainView: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
-                UsageRow(
-                    label: "Session",
-                    utilization: service.snapshot.sessionUtilization,
-                    resetDate: service.snapshot.sessionReset,
-                    state: service.refreshState
-                )
-                UsageRow(
-                    label: "Weekly",
-                    utilization: service.snapshot.weeklyUtilization,
-                    resetDate: service.snapshot.weeklyReset,
-                    state: service.refreshState
-                )
+                UsageRow(label: "Session",
+                         displayed: displayedSession,
+                         live: service.snapshot.sessionUtilization,
+                         resetDate: service.snapshot.sessionReset,
+                         state: service.refreshState,
+                         now: now)
+
+                UsageRow(label: "Weekly",
+                         displayed: displayedWeekly,
+                         live: service.snapshot.weeklyUtilization,
+                         resetDate: service.snapshot.weeklyReset,
+                         state: service.refreshState,
+                         now: now)
             }
             .padding(.horizontal, 16)
             .padding(.top, 16)
@@ -47,39 +70,27 @@ struct PopoverView: View {
             Divider()
 
             HStack(spacing: 8) {
-                statusText
-                    .font(.system(size: 11))
-                    .lineLimit(1)
+                statusText.font(.system(size: 11)).lineLimit(1)
                 Spacer()
-                Button(action: { showPrefs = true }) {
-                    Image(systemName: "gear")
-                        .font(.system(size: 12))
+                Button { showPrefs = true } label: {
+                    Image(systemName: "gear").font(.system(size: 12))
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .help("Preferences")
-
+                .buttonStyle(.plain).foregroundStyle(.secondary)
                 Button("Quit") { NSApplication.shared.terminate(nil) }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .buttonStyle(.plain).font(.system(size: 12)).foregroundStyle(.secondary)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
         }
-        .task {
-            await service.refresh()
-            startTicker()
-        }
     }
 
-    @ViewBuilder
-    private var statusText: some View {
+    @ViewBuilder private var statusText: some View {
         switch service.refreshState {
         case .idle:
             Text(updatedText).foregroundStyle(.secondary)
         case .refreshing:
-            Text("Refreshing…").foregroundStyle(.secondary)
+            Text(service.snapshot.updatedAt == .distantPast ? "Loading…" : "Refreshing…")
+                .foregroundStyle(.secondary)
         case .failed(.authFailed):
             Text("Auth failed · open Claude Code").foregroundStyle(.red)
         case .failed(.offline):
@@ -90,11 +101,11 @@ struct PopoverView: View {
     }
 
     private var updatedText: String {
-        if service.snapshot.updatedAt == .distantPast { return "Never updated" }
-        let elapsed = now.timeIntervalSince(service.snapshot.updatedAt)
-        if elapsed < 10 { return "Just now" }
-        if elapsed < 60 { return "\(Int(elapsed))s ago" }
-        if elapsed < 3600 { return "\(Int(elapsed / 60))m ago" }
+        guard service.snapshot.updatedAt != .distantPast else { return "Never updated" }
+        let e = now.timeIntervalSince(service.snapshot.updatedAt)
+        if e < 10 { return "Just now" }
+        if e < 60 { return "\(Int(e))s ago" }
+        if e < 3600 { return "\(Int(e / 60))m ago" }
         let f = DateFormatter(); f.timeStyle = .short
         return f.string(from: service.snapshot.updatedAt)
     }
@@ -109,17 +120,19 @@ struct PopoverView: View {
 
 private struct UsageRow: View {
     let label: String
-    let utilization: Double
+    let displayed: Double   // animated value for the number + bar
+    let live: Double        // real value (for color thresholds)
     let resetDate: Date
     let state: RefreshState
+    let now: Date           // passed from parent ticker so reset timer updates
 
     private var barColor: Color {
-        utilization >= 0.85 ? .red : utilization >= 0.60 ? .orange : .accentColor
+        live >= 0.85 ? .red : live >= 0.60 ? .orange : .accentColor
     }
 
     private var resetText: String {
         guard resetDate != .distantFuture else { return "—" }
-        let interval = resetDate.timeIntervalSinceNow
+        let interval = resetDate.timeIntervalSince(now)
         if interval <= 0 { return "Resetting…" }
         let h = Int(interval / 3600)
         let m = Int((interval.truncatingRemainder(dividingBy: 3600)) / 60)
@@ -135,20 +148,35 @@ private struct UsageRow: View {
             HStack {
                 Text(label).font(.system(size: 13, weight: .medium))
                 Spacer()
-                Text(state == .refreshing ? "—" : "\(Int(utilization * 100))%")
+                AnimatedPct(value: displayed)
                     .font(.system(size: 13, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(utilization >= 0.85 ? .red : .primary)
+                    .foregroundStyle(live >= 0.85 ? .red : .primary)
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 2).fill(Color.primary.opacity(0.1)).frame(height: 4)
-                    RoundedRectangle(cornerRadius: 2).fill(barColor)
-                        .frame(width: geo.size.width * utilization, height: 4)
-                        .animation(.easeInOut(duration: 0.3), value: utilization)
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.primary.opacity(0.1))
+                        .frame(height: 4)
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(barColor)
+                        .frame(width: geo.size.width * displayed, height: 4)
                 }
             }
             .frame(height: 4)
             Text(resetText).font(.system(size: 11)).foregroundStyle(.secondary)
         }
+    }
+}
+
+// Animatable percentage — SwiftUI interpolates `value` each frame so the integer
+// counts up smoothly from the old value to the new one.
+private struct AnimatedPct: View, Animatable {
+    var value: Double
+    var animatableData: Double {
+        get { value }
+        set { value = newValue }
+    }
+    var body: some View {
+        Text("\(Int((value * 100).rounded()))%")
     }
 }
