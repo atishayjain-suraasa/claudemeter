@@ -1,40 +1,43 @@
 import SwiftUI
 
-// Rendered via ImageRenderer to NSImage — not placed directly in a MenuBarExtra label
+// Claude brand orange — visible on both light and dark menu bars
+private let claudeOrange = Color(red: 0.851, green: 0.467, blue: 0.325)
+
+// Rendered via ImageRenderer to NSImage on each refresh
 struct MenuBarIconView: View {
     let utilization: Double
     let isRefreshing: Bool
     let hasFailed: Bool
 
-    private var ringColor: Color {
+    private var progressColor: Color {
         if hasFailed { return .red }
         if utilization >= 0.85 { return .red }
         if utilization >= 0.60 { return .orange }
-        return Color(white: 0.2)
+        return claudeOrange
     }
 
     var body: some View {
         ZStack {
-            // Background ring track
+            // Faint ring track in brand orange
             Circle()
-                .stroke(Color(white: 0.5).opacity(0.3), lineWidth: 2)
+                .stroke(claudeOrange.opacity(0.25), lineWidth: 2)
                 .frame(width: 20, height: 20)
 
             // Progress arc
             Circle()
                 .trim(from: 0, to: max(0.02, isRefreshing ? 0.25 : utilization))
-                .stroke(ringColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .stroke(progressColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                 .frame(width: 20, height: 20)
                 .rotationEffect(.degrees(-90))
 
-            // Claude tray icon (template PNG from Claude.app bundle)
+            // Claude logo in brand orange
             Image("ClaudeIcon")
                 .resizable()
                 .renderingMode(.template)
-                .foregroundColor(Color(white: 0.15))
-                .frame(width: 12, height: 12)
+                .foregroundColor(claudeOrange)
+                .frame(width: 11, height: 11)
 
-            // Red dot for auth failure
+            // Red dot overlay for auth failure
             if hasFailed {
                 Circle()
                     .fill(Color.red)
@@ -43,5 +46,6 @@ struct MenuBarIconView: View {
             }
         }
         .frame(width: 22, height: 22)
+        .background(Color.clear)
     }
 }

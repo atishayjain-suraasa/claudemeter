@@ -11,7 +11,7 @@ final class UsageService {
     private var pollTimer: Timer?
     private var fileWatchTimer: Timer?
     private var cachedToken: String?               // avoids re-prompting keychain on every refresh
-    private var lastTriggerMtime: Date = .distantPast
+    private var lastTriggerMtime: Date = .distantPast  // seeded from actual file at init to avoid spurious trigger
 
     private let claudeBundleID = "com.anthropic.claudefordesktop"
 
@@ -86,6 +86,11 @@ final class UsageService {
         // Create trigger file if absent so the watcher has something to stat
         if !FileManager.default.fileExists(atPath: triggerPath) {
             FileManager.default.createFile(atPath: triggerPath, contents: nil)
+        }
+        // Seed mtime from the existing file so the first timer tick doesn't
+        // immediately fire a spurious refresh (causing a second keychain prompt).
+        if let existingMtime = (try? FileManager.default.attributesOfItem(atPath: triggerPath))?[.modificationDate] as? Date {
+            lastTriggerMtime = existingMtime
         }
 
         fileWatchTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
