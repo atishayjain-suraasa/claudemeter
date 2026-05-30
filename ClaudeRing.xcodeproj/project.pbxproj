@@ -9,12 +9,12 @@
 /* Begin PBXBuildFile section */
 		27D06D5137B7446DDD66026A /* StopHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D1305F5463EDFBDC754715D /* StopHookInstaller.swift */; };
 		40A03450724DFB0ADC20A693 /* KeychainReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E1904C45F609BB9C4111FC /* KeychainReader.swift */; };
+		42C0925C36E04E51F11F9569 /* ClaudeRefreshTrigger.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC32B6F2A2A506BB6F0FD058 /* ClaudeRefreshTrigger.swift */; };
 		4804031432B53A40419C1362 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62578D74FF8FA469AC9271C3 /* AppDelegate.swift */; };
 		852192C7376A35D78B4D946F /* ClaudeRingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 701D71803D9CCEFD6F270869 /* ClaudeRingApp.swift */; };
 		87372C779DFE6569F73918A7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CEED73C73797A278040BF74C /* Assets.xcassets */; };
 		9ACF8852A4A75B1E05E89C5D /* PopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0696D9D077168EFA75A160 /* PopoverView.swift */; };
 		A9AAB25E9AA4BB388C760F38 /* UsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E903CDC03253D808C8BEBB9 /* UsageSnapshot.swift */; };
-		AC7358C17F3CBD8571326B27 /* TokenRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1372D29023C99A6E30730A30 /* TokenRefresher.swift */; };
 		BF84D41FE80E3A9564BDE93E /* UsageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C1F1BF5F117F56C1BAFEB0 /* UsageService.swift */; };
 		ECBC2E936EF925BCF9E65287 /* AnthropicClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 059324948F3588482E00109F /* AnthropicClient.swift */; };
 		FE2A256A2A4A0B4C8EB153AE /* PreferencesSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8432FEE5516530CD5C82EAB2 /* PreferencesSheet.swift */; };
@@ -23,7 +23,6 @@
 /* Begin PBXFileReference section */
 		059324948F3588482E00109F /* AnthropicClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnthropicClient.swift; sourceTree = "<group>"; };
 		0E903CDC03253D808C8BEBB9 /* UsageSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSnapshot.swift; sourceTree = "<group>"; };
-		1372D29023C99A6E30730A30 /* TokenRefresher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenRefresher.swift; sourceTree = "<group>"; };
 		62578D74FF8FA469AC9271C3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		6D1305F5463EDFBDC754715D /* StopHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopHookInstaller.swift; sourceTree = "<group>"; };
 		701D71803D9CCEFD6F270869 /* ClaudeRingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeRingApp.swift; sourceTree = "<group>"; };
@@ -32,6 +31,7 @@
 		90E1904C45F609BB9C4111FC /* KeychainReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainReader.swift; sourceTree = "<group>"; };
 		9B0696D9D077168EFA75A160 /* PopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverView.swift; sourceTree = "<group>"; };
 		B3C1F1BF5F117F56C1BAFEB0 /* UsageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageService.swift; sourceTree = "<group>"; };
+		CC32B6F2A2A506BB6F0FD058 /* ClaudeRefreshTrigger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeRefreshTrigger.swift; sourceTree = "<group>"; };
 		CEED73C73797A278040BF74C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -57,12 +57,12 @@
 			children = (
 				059324948F3588482E00109F /* AnthropicClient.swift */,
 				62578D74FF8FA469AC9271C3 /* AppDelegate.swift */,
+				CC32B6F2A2A506BB6F0FD058 /* ClaudeRefreshTrigger.swift */,
 				701D71803D9CCEFD6F270869 /* ClaudeRingApp.swift */,
 				90E1904C45F609BB9C4111FC /* KeychainReader.swift */,
 				9B0696D9D077168EFA75A160 /* PopoverView.swift */,
 				8432FEE5516530CD5C82EAB2 /* PreferencesSheet.swift */,
 				6D1305F5463EDFBDC754715D /* StopHookInstaller.swift */,
-				1372D29023C99A6E30730A30 /* TokenRefresher.swift */,
 				B3C1F1BF5F117F56C1BAFEB0 /* UsageService.swift */,
 				7D1A00659AD85F456CEB97BB /* Models */,
 				1F1CB7D1191EE2946813C463 /* Resources */,
@@ -166,12 +166,12 @@
 			files = (
 				ECBC2E936EF925BCF9E65287 /* AnthropicClient.swift in Sources */,
 				4804031432B53A40419C1362 /* AppDelegate.swift in Sources */,
+				42C0925C36E04E51F11F9569 /* ClaudeRefreshTrigger.swift in Sources */,
 				852192C7376A35D78B4D946F /* ClaudeRingApp.swift in Sources */,
 				40A03450724DFB0ADC20A693 /* KeychainReader.swift in Sources */,
 				9ACF8852A4A75B1E05E89C5D /* PopoverView.swift in Sources */,
 				FE2A256A2A4A0B4C8EB153AE /* PreferencesSheet.swift in Sources */,
 				27D06D5137B7446DDD66026A /* StopHookInstaller.swift in Sources */,
-				AC7358C17F3CBD8571326B27 /* TokenRefresher.swift in Sources */,
 				BF84D41FE80E3A9564BDE93E /* UsageService.swift in Sources */,
 				A9AAB25E9AA4BB388C760F38 /* UsageSnapshot.swift in Sources */,
 			);
