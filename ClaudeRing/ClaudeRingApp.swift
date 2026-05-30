@@ -5,8 +5,12 @@ struct ClaudeRingApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        // LSUIElement=true (Info.plist) hides dock icon.
-        // Settings scene prevents SwiftUI from auto-creating a main window.
-        Settings { EmptyView() }
+        // Settings scene = proper macOS settings window.
+        // Correct dark/light appearance, standard close button, Cmd+, shortcut.
+        // NSApp.sendAction(Selector(("showSettingsWindow:")), ...) opens it programmatically.
+        Settings {
+            PreferencesWindowView()
+                .environment(appDelegate.service)
+        }
     }
 }

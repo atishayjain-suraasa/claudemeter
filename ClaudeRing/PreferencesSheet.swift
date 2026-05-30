@@ -163,11 +163,11 @@ struct PreferencesWindowView: View {
     @Environment(UsageService.self) var service
 
     var body: some View {
-        // Fixed frame prevents NSHostingController from thrashing the window's
-        // Auto Layout pass with unbounded content size changes.
+        // Settings scene manages the window — no fixed frame needed.
+        // Width 380 gives comfortable padding; height is determined by content.
         PreferencesContent()
             .environment(service)
             .padding(20)
-            .frame(width: 300, height: 330)
+            .frame(width: 380)
     }
 }

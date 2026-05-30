@@ -7,7 +7,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
     private var iconUpdateTask: Task<Void, Never>?
-    private var prefsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
@@ -27,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if let image = NSImage(named: "ClaudeIcon") {
             image.isTemplate = true
-            image.size = NSSize(width: 14, height: 14)
+            image.size = NSSize(width: 16, height: 16)
             button.image = image
             button.imagePosition = .imageLeft
         }
@@ -58,7 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         statusItem.menu = menu
         statusItem.button?.performClick(nil)
-        statusItem.menu = nil   // restore left-click popover behavior
+        statusItem.menu = nil
     }
 
     // MARK: - Popover
@@ -70,7 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover.animates = true
     }
 
-    private func togglePopover() {
+    func togglePopover() {
         guard let button = statusItem.button else { return }
         if popover.isShown {
             popover.performClose(nil)
@@ -79,40 +78,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 rootView: PopoverView(openPrefs: { [weak self] in self?.openPrefsWindow() })
                     .environment(service)
             )
-            // Fix first-render appearance — set before the view draws
+            // Set appearance before first draw so the dark/light rendering is correct
+            // from the very first frame — without this it renders in the wrong mode.
             controller.view.appearance = NSApp.effectiveAppearance
             popover.contentViewController = controller
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         }
     }
 
-    // MARK: - Preferences window (from right-click)
+    // MARK: - Preferences window
+    // Uses the SwiftUI Settings scene — proper macOS settings window with correct
+    // appearance, close button, and Cmd+, shortcut. No manual NSWindow management.
 
     @objc func openPrefsWindow() {
         popover.performClose(nil)
-
-        if prefsWindow == nil {
-            let vc = NSHostingController(rootView: PreferencesWindowView().environment(service))
-            vc.view.appearance = NSApp.effectiveAppearance
-            // sizingOptions = [] stops NSHostingController from trying to resize the window
-            // to fit SwiftUI content size after every layout pass — that causes the
-            // infinite "Update Constraints in Window" loop that crashes the app.
-            vc.sizingOptions = []
-
-            let win = NSPanel(
-                contentRect: NSRect(x: 0, y: 0, width: 300, height: 330),
-                styleMask: [.titled, .closable],
-                backing: .buffered,
-                defer: false
-            )
-            win.title = "ClaudeRing"
-            win.contentViewController = vc
-            win.isReleasedWhenClosed = false
-            win.center()
-            prefsWindow = win
-        }
-
-        prefsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 

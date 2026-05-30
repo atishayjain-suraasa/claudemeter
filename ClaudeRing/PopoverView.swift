@@ -19,7 +19,8 @@ struct PopoverView: View {
             }
         }
         .frame(width: 260)
-        .background(.regularMaterial)
+        // No explicit background — NSPopover already renders a dark visual-effect
+        // background in dark mode. Adding .regularMaterial on top washes it out.
         .onDisappear { showPrefs = false }
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now = $0 }
         .task {
