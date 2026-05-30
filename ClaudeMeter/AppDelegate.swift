@@ -87,17 +87,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popoverPanel.hidesOnDeactivate = false
         popoverPanel.isMovableByWindowBackground = false
 
-        // Visual effect view as the visible chrome (rounded, frosted)
+        // Visual effect view as the visible chrome.
+        // Material .hudWindow is the most translucent macOS material — gives the
+        // same desktop-tint look as Shottr / Wispr Flow / Bluetooth popovers.
+        // (.popover is more opaque; .menu sits between the two.)
         let effect = NSVisualEffectView(frame: NSRect(origin: .zero, size: Self.popoverSize))
-        effect.material = .popover
+        effect.material = .hudWindow
         effect.blendingMode = .behindWindow
         effect.state = .active
-        effect.wantsLayer = true
-        effect.layer?.cornerRadius = 10
-        effect.layer?.masksToBounds = true
         effect.autoresizingMask = [.width, .height]
+        // Rounded corners via maskImage (Apple's documented pattern). Using
+        // layer.cornerRadius + masksToBounds interferes with NSVisualEffectView's
+        // hardware blur, which is why our popover looked more solid than others.
+        effect.maskImage = Self.makeRoundedMask(radius: 10)
         popoverPanel.contentView = effect
         popoverEffectView = effect
+    }
+
+    private static func makeRoundedMask(radius: CGFloat) -> NSImage {
+        let edge = 2 * radius + 1   // 9-slice: 1px middle stretches; corners stay rounded
+        let image = NSImage(size: NSSize(width: edge, height: edge), flipped: false) { rect in
+            NSColor.black.setFill()
+            NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).fill()
+            return true
+        }
+        image.capInsets = NSEdgeInsets(top: radius, left: radius, bottom: radius, right: radius)
+        image.resizingMode = .stretch
+        return image
     }
 
     func togglePopover() {
