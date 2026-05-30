@@ -159,18 +159,3 @@ struct PreferencesView: View {
 
 // MARK: - Standalone window (right-click Preferences)
 
-struct PreferencesWindowView: View {
-    @Environment(UsageService.self) var service
-
-    var body: some View {
-        // Frame matches the NSWindow contentRect exactly (420×480).
-        // sizingOptions=[] on the hosting controller stops it from resizing the window,
-        // so SwiftUI must render within these fixed bounds — no layout loop possible.
-        ScrollView {
-            PreferencesContent()
-                .environment(service)
-                .padding(24)
-        }
-        .frame(width: 420, height: 480)
-    }
-}

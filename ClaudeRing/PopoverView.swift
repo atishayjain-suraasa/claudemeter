@@ -2,12 +2,17 @@ import SwiftUI
 
 struct PopoverView: View {
     @Environment(UsageService.self) var service
-    let openPrefs: () -> Void
+    let initiallyShowPrefs: Bool
 
-    @State private var showPrefs = false
+    @State private var showPrefs: Bool
     @State private var displayedSession: Double = 0
     @State private var displayedWeekly: Double = 0
     @State private var now = Date()
+
+    init(initiallyShowPrefs: Bool = false) {
+        self.initiallyShowPrefs = initiallyShowPrefs
+        self._showPrefs = State(initialValue: initiallyShowPrefs)
+    }
 
     var body: some View {
         Group {

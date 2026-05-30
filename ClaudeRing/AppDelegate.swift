@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
     private var iconUpdateTask: Task<Void, Never>?
+    private var openWithPrefs = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
@@ -46,7 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func showContextMenu() {
         let menu = NSMenu()
 
-        let prefsItem = NSMenuItem(title: "Preferences…", action: #selector(openPrefsWindow), keyEquivalent: ",")
+        let prefsItem = NSMenuItem(title: "Preferences…", action: #selector(openPrefs), keyEquivalent: ",")
         prefsItem.target = self
         menu.addItem(prefsItem)
 
@@ -73,53 +74,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let button = statusItem.button else { return }
         if popover.isShown {
             popover.performClose(nil)
-        } else {
-            let controller = NSHostingController(
-                rootView: PopoverView(openPrefs: { [weak self] in self?.openPrefsWindow() })
-                    .environment(service)
-            )
-            // Set appearance before first draw so the dark/light rendering is correct
-            // from the very first frame — without this it renders in the wrong mode.
-            controller.view.appearance = NSApp.effectiveAppearance
-            popover.contentViewController = controller
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            return
         }
+
+        let initialView = openWithPrefs
+        openWithPrefs = false
+
+        let controller = NSHostingController(
+            rootView: PopoverView(initiallyShowPrefs: initialView)
+                .environment(service)
+        )
+        controller.view.appearance = NSApp.effectiveAppearance
+        popover.contentViewController = controller
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
     }
 
-    // MARK: - Preferences window
-
-    private var prefsWindow: NSWindow?
-
-    @objc func openPrefsWindow() {
-        popover.performClose(nil)
-
-        if prefsWindow == nil {
-            let vc = NSHostingController(
-                rootView: PreferencesWindowView().environment(service)
-            )
-            vc.view.appearance = NSApp.effectiveAppearance
-            // sizingOptions = [] is the key: stops the hosting controller from calling
-            // setContentSize on the window after every SwiftUI layout pass, which would
-            // trigger another layout, causing infinite recursion and a crash.
-            vc.sizingOptions = []
-
-            let win = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 480),
-                styleMask: [.titled, .closable],
-                backing: .buffered,
-                defer: false
-            )
-            win.title = "ClaudeRing Preferences"
-            win.contentViewController = vc
-            win.isReleasedWhenClosed = false
-            win.center()
-            prefsWindow = win
-        } else {
-            prefsWindow?.contentViewController?.view.appearance = NSApp.effectiveAppearance
-        }
-
-        prefsWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+    @objc func openPrefs() {
+        openWithPrefs = true
+        if popover.isShown { popover.performClose(nil) }
+        togglePopover()
     }
 
     // MARK: - Icon updater
