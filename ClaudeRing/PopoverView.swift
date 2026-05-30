@@ -73,6 +73,7 @@ struct PopoverView: View {
             .padding(.vertical, 8)
         }
         .frame(width: 260)
+        .background(Color.clear)    // let NSPopover's frosted-glass material show through
         .task {
             await service.refresh()
             startTicker()

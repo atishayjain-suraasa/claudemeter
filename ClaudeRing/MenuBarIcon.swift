@@ -1,49 +1,32 @@
 import SwiftUI
 
-// Claude brand orange — visible on both light and dark menu bars
-private let claudeOrange = Color(red: 0.851, green: 0.467, blue: 0.325)
-
-// Rendered via ImageRenderer to NSImage on each refresh
+// Rendered via ImageRenderer → NSImage with isTemplate=true
+// Template images let macOS handle the color (white in dark mode, black in light mode).
+// contentTintColor on the button tints the whole icon orange/red at high usage.
 struct MenuBarIconView: View {
     let utilization: Double
     let isRefreshing: Bool
-    let hasFailed: Bool
-
-    private var progressColor: Color {
-        if hasFailed { return .red }
-        if utilization >= 0.85 { return .red }
-        if utilization >= 0.60 { return .orange }
-        return claudeOrange
-    }
 
     var body: some View {
         ZStack {
-            // Faint ring track in brand orange
+            // Faint track ring
             Circle()
-                .stroke(claudeOrange.opacity(0.25), lineWidth: 2)
+                .stroke(Color.white.opacity(0.35), lineWidth: 1.8)
                 .frame(width: 20, height: 20)
 
-            // Progress arc
+            // Progress arc — white, alpha channel is what matters for template
             Circle()
-                .trim(from: 0, to: max(0.02, isRefreshing ? 0.25 : utilization))
-                .stroke(progressColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .trim(from: 0, to: max(0.04, isRefreshing ? 0.25 : utilization))
+                .stroke(Color.white, style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
                 .frame(width: 20, height: 20)
                 .rotationEffect(.degrees(-90))
 
-            // Claude logo in brand orange
+            // Claude logo
             Image("ClaudeIcon")
                 .resizable()
                 .renderingMode(.template)
-                .foregroundColor(claudeOrange)
-                .frame(width: 11, height: 11)
-
-            // Red dot overlay for auth failure
-            if hasFailed {
-                Circle()
-                    .fill(Color.red)
-                    .frame(width: 5, height: 5)
-                    .offset(x: 7, y: -7)
-            }
+                .foregroundColor(.white)
+                .frame(width: 12, height: 12)
         }
         .frame(width: 22, height: 22)
         .background(Color.clear)

@@ -43,8 +43,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func observeServiceChanges() {
-        // Re-render icon whenever service state changes
-        // We poll the @Observable values via a Task loop
         iconUpdateTask = Task { [weak self] in
             var lastSession = -1.0
             var lastState = RefreshState.idle
@@ -57,31 +55,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     lastState = st
                     self.renderIcon()
                 }
-                try? await Task.sleep(nanoseconds: 200_000_000) // 200ms poll for icon freshness
+                try? await Task.sleep(nanoseconds: 500_000_000) // 500ms — icon doesn't need sub-second updates
             }
         }
     }
 
     func renderIcon() {
-        let hasFailed: Bool = {
-            if case .failed(.authFailed) = service.refreshState { return true }
-            return false
-        }()
+        let hasFailed: Bool
+        if case .failed(.authFailed) = service.refreshState { hasFailed = true } else { hasFailed = false }
         let isRefreshing = service.refreshState == .refreshing
         let util = service.snapshot.sessionUtilization
 
-        let view = MenuBarIconView(
-            utilization: util,
-            isRefreshing: isRefreshing,
-            hasFailed: hasFailed
-        )
-
+        let view = MenuBarIconView(utilization: util, isRefreshing: isRefreshing)
         let renderer = ImageRenderer(content: view)
         renderer.scale = 2.0
+
         if let nsImage = renderer.nsImage {
-            nsImage.isTemplate = false
+            // Template mode: macOS handles light/dark adaptation automatically.
+            // The icon is white on dark menu bars, black on light — exactly like all other icons.
+            nsImage.isTemplate = true
             statusItem.button?.image = nsImage
             statusItem.button?.imageScaling = .scaleProportionallyDown
+
+            // contentTintColor tints the entire template: nil = system default (white/black),
+            // orange/red = usage alert. This is the correct macOS API for colored menu bar icons.
+            if hasFailed || util >= 0.85 {
+                statusItem.button?.contentTintColor = .systemRed
+            } else if util >= 0.60 {
+                statusItem.button?.contentTintColor = .systemOrange
+            } else {
+                statusItem.button?.contentTintColor = nil
+            }
         }
     }
 
@@ -91,10 +95,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             closePopover()
         } else {
             // Re-create content so popover state is always fresh
-            popover.contentViewController = NSHostingController(
+            let controller = NSHostingController(
                 rootView: PopoverView(onClose: { [weak self] in self?.closePopover() })
                     .environment(service)
             )
+            // Make the hosting view transparent so NSPopover's frosted-glass
+            // visual effect material shows through (matches system popovers).
+            controller.view.wantsLayer = true
+            controller.view.layer?.backgroundColor = .clear
+            popover.contentViewController = controller
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         }
     }
