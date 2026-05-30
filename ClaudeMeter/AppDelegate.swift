@@ -142,7 +142,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     } else if u >= 0.60 {
                         self.statusItem.button?.contentTintColor = .systemOrange
                     } else {
-                        self.statusItem.button?.contentTintColor = nil
+                        self.statusItem.button?.contentTintColor = .labelColor
                     }
                 }
                 try? await Task.sleep(nanoseconds: 500_000_000)
