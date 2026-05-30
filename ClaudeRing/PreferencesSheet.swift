@@ -163,11 +163,11 @@ struct PreferencesWindowView: View {
     @Environment(UsageService.self) var service
 
     var body: some View {
-        VStack(spacing: 0) {
-            PreferencesContent()
-                .environment(service)
-                .padding(20)
-        }
-        .frame(width: 300)
+        // Fixed frame prevents NSHostingController from thrashing the window's
+        // Auto Layout pass with unbounded content size changes.
+        PreferencesContent()
+            .environment(service)
+            .padding(20)
+            .frame(width: 300, height: 330)
     }
 }

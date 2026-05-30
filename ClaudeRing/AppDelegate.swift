@@ -94,10 +94,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if prefsWindow == nil {
             let vc = NSHostingController(rootView: PreferencesWindowView().environment(service))
             vc.view.appearance = NSApp.effectiveAppearance
-            let win = NSPanel(contentViewController: vc)
+            // sizingOptions = [] stops NSHostingController from trying to resize the window
+            // to fit SwiftUI content size after every layout pass — that causes the
+            // infinite "Update Constraints in Window" loop that crashes the app.
+            vc.sizingOptions = []
+
+            let win = NSPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 300, height: 330),
+                styleMask: [.titled, .closable],
+                backing: .buffered,
+                defer: false
+            )
             win.title = "ClaudeRing"
-            win.styleMask = [.titled, .closable]
-            win.setContentSize(NSSize(width: 300, height: 300))
+            win.contentViewController = vc
             win.isReleasedWhenClosed = false
             win.center()
             prefsWindow = win
