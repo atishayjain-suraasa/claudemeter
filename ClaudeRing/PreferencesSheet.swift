@@ -103,6 +103,34 @@ private struct PreferencesContent: View {
             }
             .toggleStyle(.checkbox)
             .onChange(of: launchAtLogin) { _, new in setLaunchAtLogin(new) }
+
+            Divider()
+
+            // Diagnostics
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Diagnostics")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 8) {
+                    Button("Show Logs in Finder") {
+                        Logger.shared.revealInFinder()
+                    }
+                    .controlSize(.small)
+
+                    Button("Copy Diagnostic Info") {
+                        let blob = Logger.shared.diagnosticBlob()
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(blob, forType: .string)
+                    }
+                    .controlSize(.small)
+                }
+
+                Text("Logs are stored locally and never uploaded. Tokens and account IDs are never logged.")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .onAppear { launchAtLogin = currentLoginState() }
         .onChange(of: selectedInterval) { _, new in
@@ -135,6 +163,6 @@ struct PreferencesWindowView: View {
         }
         // Fixed frame matches the NSWindow contentRect set in AppDelegate (440×480).
         // NSHostingView renders SwiftUI within this rect; no resize negotiation.
-        .frame(width: 440, height: 480)
+        .frame(width: 440, height: 560)
     }
 }

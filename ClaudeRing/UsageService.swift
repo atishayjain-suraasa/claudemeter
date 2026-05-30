@@ -27,6 +27,7 @@ final class UsageService {
     }
 
     init() {
+        log(.info, "lifecycle", "UsageService init")
         startFileWatcher()
         observeClaudeDesktopLifecycle()
         observeWake()
@@ -42,6 +43,7 @@ final class UsageService {
     func refresh() async {
         guard refreshState != .refreshing else { return }
         refreshState = .refreshing
+        let start = Date()
 
         do {
             let token = try resolveToken()
@@ -49,25 +51,36 @@ final class UsageService {
                 let data = try await AnthropicClient.fetchUsage(token: token)
                 applyData(data)
                 refreshState = .idle
+                let dt = Int(Date().timeIntervalSince(start) * 1000)
+                log(.info, "refresh", "ok session=\(Int(data.sessionUtilization * 100))% weekly=\(Int(data.weeklyUtilization * 100))% in \(dt)ms")
             } catch AnthropicClient.ClientError.unauthorized {
-                // Cached token expired. Trigger Claude Code to refresh its own keychain,
-                // then re-read silently and retry once.
+                log(.warn, "refresh", "401 — cached token expired, triggering claude subprocess refresh")
                 cachedToken = nil
                 try await ClaudeRefreshTrigger.triggerRefresh()
                 let newToken = try resolveToken()
                 let data = try await AnthropicClient.fetchUsage(token: newToken)
                 applyData(data)
                 refreshState = .idle
+                let dt = Int(Date().timeIntervalSince(start) * 1000)
+                log(.info, "refresh", "recovered after subprocess refresh in \(dt)ms")
             }
         } catch KeychainError.itemNotFound, KeychainError.missingToken, KeychainError.accessDenied {
+            log(.error, "refresh", "keychain access failed — user must grant Always Allow or sign in to Claude Code")
             refreshState = .failed(.authFailed)
         } catch AnthropicClient.ClientError.networkError {
+            log(.warn, "refresh", "network error — will retry on next tick")
             refreshState = .failed(.offline)
         } catch ClaudeRefreshError.claudeNotInstalled {
+            log(.error, "refresh", "claude CLI not found in shell PATH — cannot refresh expired token")
             refreshState = .failed(.authFailed)
-        } catch ClaudeRefreshError.timeout, ClaudeRefreshError.subprocessFailed {
+        } catch ClaudeRefreshError.timeout {
+            log(.error, "refresh", "claude subprocess timed out after 30s during token refresh")
+            refreshState = .failed(.authFailed)
+        } catch ClaudeRefreshError.subprocessFailed(let code) {
+            log(.error, "refresh", "claude subprocess exited with code \(code)")
             refreshState = .failed(.authFailed)
         } catch {
+            log(.error, "refresh", "unexpected error: \(type(of: error)) — \(error.localizedDescription)")
             refreshState = .failed(.headersUnreadable)
         }
     }

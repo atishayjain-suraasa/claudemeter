@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,43 +15,24 @@ jobs:
       - name: Install xcodegen
         run: brew install xcodegen
 
-      - name: Generate Xcode project
-        run: xcodegen generate
+      - name: Build release zip
+        run: ./release.sh
 
-      - name: Build
-        run: |
-          xcodebuild \
-            -project ClaudeRing.xcodeproj \
-            -scheme ClaudeRing \
-            -configuration Release \
-            -archivePath build/ClaudeRing.xcarchive \
-            archive \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=YES \
-            ONLY_ACTIVE_ARCH=NO
-
-      - name: Export app
-        run: |
-          xcodebuild \
-            -exportArchive \
-            -archivePath build/ClaudeRing.xcarchive \
-            -exportPath build/export \
-            -exportOptionsPlist .github/export-options.plist
-
-      - name: Ad-hoc sign
-        run: |
-          codesign --force --sign - \
-            --entitlements ClaudeRing/Resources/ClaudeRing.entitlements \
-            build/export/ClaudeRing.app
-
-      - name: Zip
-        run: |
-          cd build/export
-          zip -r ../../ClaudeRing.app.zip ClaudeRing.app
-
-      - name: Upload to release
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: ClaudeRing.app.zip
+          files: build/release/ClaudeRing.app.zip
           generate_release_notes: true
+          body: |
+            ## Install
+
+            1. Download `ClaudeRing.app.zip` below
+            2. Unzip and move to `/Applications`
+            3. Remove the macOS quarantine flag:
+               ```
+               xattr -dr com.apple.quarantine /Applications/ClaudeRing.app
+               ```
+            4. Open ClaudeRing
+            5. Click **Always Allow** on the macOS keychain prompt
+            6. The ring appears in your menu bar

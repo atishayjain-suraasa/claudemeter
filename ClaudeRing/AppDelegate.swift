@@ -102,7 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover.performClose(nil)
 
         if prefsWindow == nil {
-            let size = NSSize(width: 440, height: 480)
+            let size = NSSize(width: 440, height: 560)
 
             let hostingView = NSHostingView(
                 rootView: PreferencesWindowView().environment(service)

@@ -6,3 +6,4 @@ build/
 *.xcodeproj/project.xcworkspace/xcshareddata/
 DerivedData/
 /ClaudeRing/Info.plist
+build/
