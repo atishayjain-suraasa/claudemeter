@@ -5,12 +5,18 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let service = UsageService()
     private var statusItem: NSStatusItem!
-    private var popover: NSPopover!
     private var iconUpdateTask: Task<Void, Never>?
+
+    // Custom popover panel (not NSPopover — NSPopover has a non-removable arrow tail
+    // and Apple's own menu bar UIs like Bluetooth/Control Center don't use it).
+    private var popoverPanel: NSPanel!
+    private var popoverEffectView: NSVisualEffectView!
+    private var globalClickMonitor: Any?
+    private static let popoverSize = NSSize(width: 260, height: 180)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
-        setupPopover()
+        setupPopoverPanel()
         startIconUpdater()
     }
 
@@ -60,36 +66,93 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.menu = nil
     }
 
-    // MARK: - Popover
+    // MARK: - Popover (custom borderless NSPanel)
+    //
+    // Matches the Bluetooth / Control Center / Wi-Fi pattern: a borderless panel
+    // anchored under the status item button, with a visual effect background
+    // (frosted glass) and rounded corners. No NSPopover arrow tail.
 
-    private func setupPopover() {
-        popover = NSPopover()
-        popover.contentSize = NSSize(width: 260, height: 175)
-        popover.behavior = .transient
-        popover.animates = true
+    private func setupPopoverPanel() {
+        popoverPanel = NSPanel(
+            contentRect: NSRect(origin: .zero, size: Self.popoverSize),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        popoverPanel.isOpaque = false
+        popoverPanel.backgroundColor = .clear
+        popoverPanel.hasShadow = true
+        popoverPanel.level = .popUpMenu
+        popoverPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        popoverPanel.hidesOnDeactivate = false
+        popoverPanel.isMovableByWindowBackground = false
+
+        // Visual effect view as the visible chrome (rounded, frosted)
+        let effect = NSVisualEffectView(frame: NSRect(origin: .zero, size: Self.popoverSize))
+        effect.material = .popover
+        effect.blendingMode = .behindWindow
+        effect.state = .active
+        effect.wantsLayer = true
+        effect.layer?.cornerRadius = 10
+        effect.layer?.masksToBounds = true
+        effect.autoresizingMask = [.width, .height]
+        popoverPanel.contentView = effect
+        popoverEffectView = effect
     }
 
     func togglePopover() {
-        if popover.isShown {
-            popover.performClose(nil)
+        if popoverPanel.isVisible {
+            closePopover()
         } else {
             showPopover()
         }
     }
 
     private func showPopover() {
-        guard let button = statusItem.button else { return }
-        if popover.isShown { popover.close() }
+        guard let button = statusItem.button,
+              let buttonWindow = button.window else { return }
 
-        // VisualEffectBackground inside PopoverView gives the popover its proper
-        // material — no need to force controller.view.appearance, which doesn't
-        // propagate correctly before the view is added to a window anyway.
-        let controller = NSHostingController(
+        // Mount fresh SwiftUI content each open so state (refresh, ticker) is clean
+        popoverEffectView.subviews.forEach { $0.removeFromSuperview() }
+        let hosting = NSHostingView(
             rootView: PopoverView(openPrefs: { [weak self] in self?.openPrefs() })
                 .environment(service)
         )
-        popover.contentViewController = controller
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        hosting.frame = popoverEffectView.bounds
+        hosting.autoresizingMask = [.width, .height]
+        popoverEffectView.addSubview(hosting)
+
+        // Position: left edge aligned with the status item, just below the menu bar
+        let buttonFrame = buttonWindow.convertToScreen(button.frame)
+        let gap: CGFloat = 4
+        var origin = NSPoint(
+            x: buttonFrame.minX,
+            y: buttonFrame.minY - Self.popoverSize.height - gap
+        )
+        if let screenFrame = NSScreen.main?.visibleFrame {
+            origin.x = min(origin.x, screenFrame.maxX - Self.popoverSize.width - 8)
+            origin.x = max(origin.x, screenFrame.minX + 8)
+        }
+        popoverPanel.setFrameOrigin(origin)
+        popoverPanel.makeKeyAndOrderFront(nil)
+
+        // Auto-dismiss on outside clicks. Global monitor fires only for clicks
+        // outside our app, so clicking the status item (which routes through
+        // handleClick → togglePopover → closePopover) and clicking inside the
+        // popover content are both handled correctly without flicker.
+        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown]
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.closePopover() }
+        }
+    }
+
+    private func closePopover() {
+        popoverPanel?.orderOut(nil)
+        if let monitor = globalClickMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalClickMonitor = nil
+        }
     }
 
     // MARK: - Preferences window
@@ -101,7 +164,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var prefsWindow: NSWindow?
 
     @objc func openPrefs() {
-        popover.performClose(nil)
+        closePopover()
 
         if prefsWindow == nil {
             let size = NSSize(width: 440, height: 560)

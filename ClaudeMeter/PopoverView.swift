@@ -11,9 +11,9 @@ struct PopoverView: View {
     var body: some View {
         mainView
         .frame(width: 260)
-        // NSVisualEffectView background — matches Bluetooth / Control Center / Shottr.
-        // Renders correctly on first show (no light→dark flash) and adapts to system.
-        .background(VisualEffectBackground(material: .popover))
+        // No background — the parent NSPanel's NSVisualEffectView provides the
+        // frosted-glass material and rounded corners. Adding a SwiftUI background
+        // here would layer redundantly and dim the appearance.
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now = $0 }
         .task {
             // Seed displayed values before first refresh so there's no flash from 0
